@@ -1,6 +1,5 @@
 import React from 'react';
-import { Card, Typography, Alert, Row, Col, Statistic, Divider, Button } from 'antd';
-import { GithubOutlined, HeartOutlined } from '@ant-design/icons';
+import { Card, Typography, Alert, Row, Col, Statistic } from 'antd';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -86,7 +85,7 @@ const About: React.FC = () => {
               </Col>
             </Row>
           </Col>
-          
+{/*           
           <Col xs={24} lg={8}>
             <Card>
               <Title level={4}>项目信息</Title>
@@ -131,7 +130,7 @@ const About: React.FC = () => {
                 </Text>
               </div>
             </Card>
-          </Col>
+          </Col> */}
         </Row>
       </Card>
     </div>

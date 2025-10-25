@@ -25,11 +25,49 @@ code {
   padding: 20px;
 }
 
+/* 强制为页面内容添加顶部间距，避免被header遮挡 */
+body {
+  padding-top: 0;
+}
+
+/* 确保主要内容区域有足够的顶部间距 */
+.ant-layout-content .investool-container {
+  margin-top: 20px;
+}
+
+/* 确保内容不被 header 遮挡 */
+.ant-layout-content {
+  padding-top: 0;
+  margin-top: 0;
+}
+
+/* 修复 Layout 布局问题 - Content 不应该覆盖 Header */
+.ant-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+.ant-layout-header {
+  flex: 0 0 auto;
+  position: relative !important;
+  z-index: 800;
+}
+
+.ant-layout-content {
+  flex: 1 1 auto;
+  margin-top: 0;
+  padding-top: 0;
+}
+
 .investool-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   padding: 20px 0;
   margin-bottom: 20px;
+  position: relative;
+  z-index: 801;
+  height: auto;
+  min-height: 80px;
 }
 
 .investool-logo {
