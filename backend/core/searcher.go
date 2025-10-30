@@ -17,6 +17,7 @@ import (
 	"github.com/axiaoxin-com/investool/datacenter/sina"
 	"github.com/axiaoxin-com/investool/models"
 	"github.com/axiaoxin-com/logging"
+	"github.com/sirupsen/logrus"
 )
 
 // Searcher 搜索器实例
@@ -107,7 +108,7 @@ func (s Searcher) SearchFunds(ctx context.Context, fundCodes []string) (map[stri
 	var wg sync.WaitGroup
 	var mu sync.Mutex
 
-	logging.Infof(ctx, "SearchFunds request start... maxConcurrency=%d", maxConcurrency)
+	logrus.Infof("SearchFunds request start... maxConcurrency=%d", maxConcurrency)
 
 	// 预编译正则表达式以提高性能
 	fundCodeRegex := regexp.MustCompile(`\d{6}`)
@@ -137,13 +138,13 @@ func (s Searcher) SearchFunds(ctx context.Context, fundCodes []string) (map[stri
 					return err
 				},
 				retry.OnRetry(func(n uint, err error) {
-					logging.Debugf(ctx, "retry#%d: code:%v %v", n, fundCode, err)
+					logrus.Debugf("retry#%d: code:%v %v", n, fundCode, err)
 				}),
 				retry.Attempts(3),
 				retry.Delay(500*time.Millisecond),
 			)
 			if err != nil {
-				logging.Errorf(ctx, "SearchFunds QueryFundInfo code:%v err:%v", fundCode, err)
+				logrus.Errorf("SearchFunds QueryFundInfo code:%v err:%v", fundCode, err)
 				return
 			}
 			fund := models.NewFund(ctx, fundresp)
@@ -153,7 +154,7 @@ func (s Searcher) SearchFunds(ctx context.Context, fundCodes []string) (map[stri
 		}(code)
 	}
 	wg.Wait()
-	logging.Infof(ctx, "SearchFunds request end. latency:%+v", time.Since(start))
+	logrus.Infof("SearchFunds request end. latency:%+v", time.Since(start))
 	return result, nil
 }
 
@@ -176,18 +177,18 @@ func (s Searcher) SearchFundByStock(ctx context.Context, stockNames ...string) (
 			}()
 			searchResults, err := datacenter.Sina.KeywordSearch(ctx, kw)
 			if err != nil {
-				logging.Errorf(ctx, "search %s error:%s", kw, err.Error())
+				logrus.Errorf("search %s error:%s", kw, err.Error())
 				return
 			}
 			if len(searchResults) == 0 {
-				logging.Warnf(ctx, "search %s no data", kw)
+				logrus.Warnf("search %s no data", kw)
 				return
 			}
-			logging.Infof(ctx, "search keyword:%s results:%+v, %+v matched", kw, searchResults, searchResults[0])
+			logrus.Infof("search keyword:%s results:%+v, %+v matched", kw, searchResults, searchResults[0])
 			result := searchResults[0]
 			holdStockFunds, err := datacenter.EastMoney.QueryFundByStock(ctx, result.Name, result.SecurityCode)
 			if err != nil {
-				logging.Error(ctx, "SearchFundByStock QueryFundByStock err:"+err.Error())
+				logrus.Error("SearchFundByStock QueryFundByStock err:" + err.Error())
 			}
 			mu.Lock()
 			for _, f := range holdStockFunds {
@@ -206,6 +207,6 @@ func (s Searcher) SearchFundByStock(ctx context.Context, stockNames ...string) (
 			results = append(results, fundMap[fcode])
 		}
 	}
-	logging.Infof(ctx, "SearchFundByStock with %v has %d results", stockNames, len(results))
+	logrus.Infof("SearchFundByStock with %v has %d results", stockNames, len(results))
 	return results, nil
 }

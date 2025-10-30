@@ -3,40 +3,51 @@ package cron
 
 import (
 	"context"
-	"encoding/json"
-	"io/ioutil"
 
-	"github.com/axiaoxin-com/goutils"
 	"github.com/axiaoxin-com/investool/datacenter"
 	"github.com/axiaoxin-com/investool/models"
-	"github.com/axiaoxin-com/logging"
+	"github.com/sirupsen/logrus"
 )
 
 // SyncFundManagers 同步基金经理
 func SyncFundManagers() {
-	if !goutils.IsTradingDay() {
-		return
-	}
 	ctx := context.Background()
-	managers, err := datacenter.EastMoney.FundMangers(ctx, "zq", "penavgrowth", "desc")
-	if err != nil {
-		logging.Error(ctx, "SyncFundManagers error:"+err.Error())
-	}
-	managers.SortByYieldse()
-	if len(managers) != 0 {
-		models.FundManagers = managers
+
+	// 检查数据库是否初始化
+	if models.DB == nil {
+		logrus.Error("SyncFundManagers: database not initialized")
+		return
 	}
 
-	// 更新文件
-	b, err := json.MarshalIndent(managers, "", "  ")
+	managers, err := datacenter.EastMoney.FundMangers(ctx, "zq", "penavgrowth", "desc")
 	if err != nil {
-		logging.Errorf(ctx, "SyncFundManagers json marshal error:", err)
-		promSyncError.WithLabelValues("SyncFundManagers").Inc()
+		logrus.Errorf("SyncFundManagers error: %v", err)
 		return
 	}
-	if err := ioutil.WriteFile(models.FundManagersFilename, b, 0666); err != nil {
-		logging.Errorf(ctx, "SyncFundManagers WriteFile error:", err)
-		promSyncError.WithLabelValues("SyncFundManagers").Inc()
-		return
+	managers.SortByYieldse()
+
+	// 保存数据到数据库
+	for _, manager := range managers {
+		// 保存基金经理基本信息
+		managerDB := models.ToFundManagerDB(manager)
+		if err := models.DB.Save(managerDB).Error; err != nil {
+			logrus.Errorf("SyncFundManagers Save manager error: id=%s, error=%v", manager.ID, err)
+			continue
+		}
+
+		// 保存基金经理管理的基金列表
+		if len(manager.FundCodes) > 0 {
+			// 删除旧的基金记录
+			models.DB.Where("manager_id = ?", manager.ID).Delete(&models.FundManagerFundsDB{})
+			// 插入新的基金记录
+			funds := models.ToFundManagerFundsDB(manager.ID, manager.FundCodes, manager.FundNames)
+			if len(funds) > 0 {
+				if err := models.DB.CreateInBatches(funds, 100).Error; err != nil {
+					logrus.Errorf("SyncFundManagers Save manager funds error: id=%s, error=%v", manager.ID, err)
+				}
+			}
+		}
 	}
+
+	logrus.Info("SyncFundManagers saved to database successfully")
 }

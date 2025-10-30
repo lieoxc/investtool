@@ -12,12 +12,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
 	"github.com/corpix/uarand"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // FundManagerInfo 基金经理信息
@@ -158,7 +156,6 @@ func (f FundManagerInfoList) SortByYieldse() {
 // sc（排序字段）abbname:经理名 jjgspy:基金公司 totaldays:从业时间 netnav:基金规模 penavgrowth:现任基金最佳回报
 // st（排序类型）asc desc
 func (e EastMoney) FundMangers(ctx context.Context, ft, sc, st string) (FundManagerInfoList, error) {
-	beginTime := time.Now()
 	header := map[string]string{
 		"user-agent": uarand.GetRandom(),
 	}
@@ -172,21 +169,16 @@ func (e EastMoney) FundMangers(ctx context.Context, ft, sc, st string) (FundMana
 			sc,
 			st,
 		)
-		logging.Debug(ctx, "EastMoney FundMangers "+apiurl+" begin", zap.Int("index", index))
-		beginTime := time.Now()
+		logrus.Debugf("EastMoney FundMangers %s begin, index:%d", apiurl, index)
 		resp, err := goutils.HTTPGETRaw(ctx, e.HTTPClient, apiurl, header)
 		strresp := string(resp)
-		latency := time.Now().Sub(beginTime).Milliseconds()
-		logging.Debug(ctx, "EastMoney FundMangers "+apiurl+" end",
-			zap.Int64("latency(ms)", latency),
-			zap.Int("index", index),
-		)
+		logrus.Debugf("EastMoney FundMangers %s end, index:%d", apiurl, index)
 		if err != nil {
 			return nil, err
 		}
 		reg, err := regexp.Compile(`\[(".+?")\]`)
 		if err != nil {
-			logging.Error(ctx, "regexp error:"+err.Error())
+			logrus.Errorf("regexp error:%v", err)
 			return nil, err
 		}
 		matched := reg.FindAllStringSubmatch(strresp, -1)
@@ -206,14 +198,14 @@ func (e EastMoney) FundMangers(ctx context.Context, ft, sc, st string) (FundMana
 
 				fields := field.FindAllStringSubmatch(m1, -1)
 				if len(fields) != 12 {
-					logging.Warnf(ctx, "invalid fields len:%v %v", len(fields), m1)
+					logrus.Warnf("invalid fields len:%v %v", len(fields), m1)
 					return
 				}
 				totaldays := 0
 				if fields[6][1] != "" && fields[6][1] != "--" {
 					totaldays, err = strconv.Atoi(fields[6][1])
 					if err != nil {
-						logging.Warnf(ctx, "parse totaldays:%v to int error:%v", fields[6], err)
+						logrus.Warnf("parse totaldays:%v to int error:%v", fields[6], err)
 					}
 				}
 				bestReturn := 0.0
@@ -221,7 +213,7 @@ func (e EastMoney) FundMangers(ctx context.Context, ft, sc, st string) (FundMana
 					bestReturnNum := strings.TrimSuffix(fields[7][1], "%")
 					bestReturn, err = strconv.ParseFloat(bestReturnNum, 64)
 					if err != nil {
-						logging.Warnf(ctx, "parse bestReturn:%v to float64 error:%v", bestReturnNum, err)
+						logrus.Warnf("parse bestReturn:%v to float64 error:%v", bestReturnNum, err)
 					}
 				}
 				scale := 0.0
@@ -229,7 +221,7 @@ func (e EastMoney) FundMangers(ctx context.Context, ft, sc, st string) (FundMana
 					scaleNum := strings.TrimSuffix(fields[10][1], "亿元")
 					scale, err = strconv.ParseFloat(scaleNum, 64)
 					if err != nil {
-						logging.Warnf(ctx, "parse scale:%v to float64 error:%v", scaleNum, err)
+						logrus.Warnf("parse scale:%v to float64 error:%v", scaleNum, err)
 					}
 				}
 				wbestReturn := 0.0
@@ -237,7 +229,7 @@ func (e EastMoney) FundMangers(ctx context.Context, ft, sc, st string) (FundMana
 					wbestReturnNum := strings.TrimSuffix(fields[11][1], "%")
 					wbestReturn, err = strconv.ParseFloat(wbestReturnNum, 64)
 					if err != nil {
-						logging.Warnf(ctx, "parse bestReturn:%v to float64 error:%v", wbestReturnNum, err)
+						logrus.Warnf("parse bestReturn:%v to float64 error:%v", wbestReturnNum, err)
 					}
 				}
 				currentBestFundCode := fields[8][1]
@@ -250,7 +242,7 @@ func (e EastMoney) FundMangers(ctx context.Context, ft, sc, st string) (FundMana
 
 				info, err := e.QueryFundMsnMangerInfo(ctx, fields[0][1])
 				if err != nil {
-					logging.Error(ctx, "QueryFundMsnMangerInfo err:"+err.Error())
+					logrus.Error("QueryFundMsnMangerInfo err:" + err.Error())
 				} else {
 					resume = strings.TrimSpace(fmt.Sprintf("%s\n投资方法:%s\n投资理念:%s", info.Datas.Resume, info.Datas.Investmentmethod, info.Datas.Investmentidear))
 					currentBestFundType = MftypeDesc[info.Datas.Mftype]
@@ -258,7 +250,7 @@ func (e EastMoney) FundMangers(ctx context.Context, ft, sc, st string) (FundMana
 					if info.Datas.Yieldse != "" && info.Datas.Yieldse != "--" {
 						yieldse, err = strconv.ParseFloat(info.Datas.Yieldse, 64)
 						if err != nil {
-							logging.Warnf(ctx, "parse yieldse:%v to float64 error:%v", info.Datas.Yieldse, err)
+							logrus.Warnf("parse yieldse:%v to float64 error:%v", info.Datas.Yieldse, err)
 						}
 					}
 					// msn info里面的代表基金可能会不一样，以msn里面的为准
@@ -269,13 +261,13 @@ func (e EastMoney) FundMangers(ctx context.Context, ft, sc, st string) (FundMana
 					if info.Datas.Mgold != "" && info.Datas.Mgold != "--" {
 						score, err = strconv.ParseFloat(info.Datas.Mgold, 64)
 						if err != nil {
-							logging.Error(ctx, "parse Mgold to score error:"+err.Error())
+							logrus.Error("parse Mgold to score error:" + err.Error())
 						}
 					}
 					if info.Datas.Awardnum != "" && info.Datas.Awardnum != "--" {
 						awardNum, err = strconv.Atoi(info.Datas.Awardnum)
 						if err != nil {
-							logging.Error(ctx, "parse Awardnum error:"+err.Error())
+							logrus.Error("parse Awardnum error:" + err.Error())
 						}
 					}
 				}
@@ -306,12 +298,6 @@ func (e EastMoney) FundMangers(ctx context.Context, ft, sc, st string) (FundMana
 		// 等20个goroutine全部完了再开始新的，不然内存可能不够
 		index++
 	}
-	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"EastMoney FundMangers end",
-		zap.Int64("latency(ms)", latency),
-		zap.Int("resultCount", len(result)),
-	)
+	logrus.Debugf("EastMoney FundMangers end, resultCount:%d", len(result))
 	return result, nil
 }

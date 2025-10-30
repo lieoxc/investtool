@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
 	"github.com/fsnotify/fsnotify"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
 
@@ -27,17 +27,17 @@ func InitWithConfigFile(configFile string) {
 	ext := path.Ext(file)
 	configType := strings.Trim(ext, ".")
 	configName := strings.TrimSuffix(file, ext)
-	logging.Infof(nil, "load %s type config file %s from %s", configType, configName, configPath)
+	logrus.Infof("load %s type config file %s from %s", configType, configName, configPath)
 
 	if err := goutils.InitViper(configFile, func(e fsnotify.Event) {
-		logging.Warn(nil, "Config file changed:"+e.Name)
-		logging.SetLevel(viper.GetString("logging.level"))
+		logrus.Warn("Config file changed:" + e.Name)
+		logrus.SetLevel(logrus.Level(viper.GetInt("logging.level")))
 	}); err != nil {
 		// 文件不存在时 1 使用默认配置，其他 err 直接 panic
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			panic(err)
 		}
-		logging.Error(nil, "Init viper error:"+err.Error())
+		logrus.Error("Init viper error:" + err.Error())
 	}
 
 	// 设置 viper 中 webserver 配置项默认值
@@ -82,10 +82,10 @@ func Run(app http.Handler) {
 			}
 		}
 		if err := srv.Serve(ln); err != nil {
-			logging.Error(nil, err.Error())
+			logrus.Error("Serve error:" + err.Error())
 		}
 	}()
-	logging.Infof(nil, "Server is running on %s", srv.Addr)
+	logrus.Infof("Server is running on %s", srv.Addr)
 
 	// 监听中断信号， WriteTimeout 时间后优雅关闭服务
 	// syscall.SIGTERM 不带参数的 kill 命令
@@ -94,13 +94,13 @@ func Run(app http.Handler) {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	logging.Infof(nil, "Server is shutting down.")
+	logrus.Infof("Server is shutting down.")
 
 	// 创建一个 context 用于通知 server 3 秒后结束当前正在处理的请求
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {
-		logging.Error(nil, "Server shutdown with error: "+err.Error())
+		logrus.Error("Server shutdown with error: " + err.Error())
 	}
-	logging.Info(nil, "Server exit.")
+	logrus.Info("Server exit.")
 }

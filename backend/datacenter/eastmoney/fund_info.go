@@ -5,12 +5,10 @@ package eastmoney
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
 	"github.com/corpix/uarand"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // JJXQ 基金详情
@@ -316,8 +314,7 @@ type RespFundInfo struct {
 func (e EastMoney) QueryFundInfo(ctx context.Context, fundCode string) (*RespFundInfo, error) {
 	apiurl := fmt.Sprintf("http://j5.dfcfw.com/sc/tfs/qt/v2.0.1/%v.json", fundCode)
 	params := map[string]string{}
-	logging.Debug(ctx, "EastMoney QueryFundInfo "+apiurl+" begin", zap.Any("params", params))
-	beginTime := time.Now()
+	logrus.Debugf("EastMoney QueryFundInfo %s begin, params:%+v", apiurl, params)
 	resp := RespFundInfo{}
 	apiurl, err := goutils.NewHTTPGetURLWithQueryString(ctx, apiurl, params)
 	if err != nil {
@@ -327,13 +324,7 @@ func (e EastMoney) QueryFundInfo(ctx context.Context, fundCode string) (*RespFun
 		"user-agent": uarand.GetRandom(),
 	}
 	err = goutils.HTTPGET(ctx, e.HTTPClient, apiurl, header, &resp)
-	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"EastMoney QueryFundInfo "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", resp),
-	)
+	logrus.Debugf("EastMoney QueryFundInfo %s end", apiurl)
 	if err != nil {
 		return nil, err
 	}

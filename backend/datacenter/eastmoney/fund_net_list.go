@@ -10,8 +10,8 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
 	"github.com/corpix/uarand"
+	"github.com/sirupsen/logrus"
 )
 
 // FundType 基金类型
@@ -122,7 +122,7 @@ func (e EastMoney) QueryAllFundList(ctx context.Context, fundType FundType) (Fun
 	var mu sync.Mutex
 	var wg sync.WaitGroup
 	var sm sync.Map
-	logging.Infof(ctx, "QueryAllFundList maxConcurrency:%d,pageCount:%d,totalCount:%d", maxConcurrency, pageCount, totalCount)
+	logrus.Infof("QueryAllFundList maxConcurrency:%d,pageCount:%d,totalCount:%d", maxConcurrency, pageCount, totalCount)
 	wg.Add(pageCount - 1)
 	for pageIndex := 2; pageIndex <= pageCount; pageIndex++ {
 		go func(index int) {
@@ -138,23 +138,23 @@ func (e EastMoney) QueryAllFundList(ctx context.Context, fundType FundType) (Fun
 				func() error {
 					var err error
 					resp, err = e.QueryFundListByPage(ctx, fundType, index)
-					logging.Debugf(ctx, "QueryAllFundList QueryFundListByPage:%d resp:%+v", index, resp)
+					logrus.Debugf("QueryAllFundList QueryFundListByPage:%d resp:%+v", index, resp)
 					return err
 				},
 				retry.OnRetry(func(n uint, err error) {
-					logging.Debugf(ctx, "retry#%d: page:%v %v", n, index, err)
+					logrus.Debugf("retry#%d: page:%v %v", n, index, err)
 				}),
 				retry.Attempts(3),
 				retry.Delay(300*time.Millisecond),
 			)
 			if err != nil {
-				logging.Errorf(ctx, "QueryAllFundList QueryFundListByPage:%d err:%v", index, err)
+				logrus.Errorf("QueryAllFundList QueryFundListByPage:%d err:%v", index, err)
 				return
 			}
 			if len(resp.Datas) != 0 {
 				for _, d := range resp.Datas[0] {
 					if _, exist := sm.Load(d.Fcode); exist {
-						logging.Debugf(ctx, "code:%v is already exist", d.Fcode)
+						logrus.Debugf("code:%v is already exist", d.Fcode)
 						continue
 					}
 					mu.Lock()
@@ -167,7 +167,7 @@ func (e EastMoney) QueryAllFundList(ctx context.Context, fundType FundType) (Fun
 	}
 	wg.Wait()
 	if len(result) != totalCount {
-		logging.Errorf(ctx, "QueryAllFundList result count:%d != resp.TotalCount:%d", len(result), totalCount)
+		logrus.Errorf("QueryAllFundList result count:%d != resp.TotalCount:%d", len(result), totalCount)
 	}
 	return result, nil
 }
@@ -186,8 +186,6 @@ func (e EastMoney) QueryFundListByPage(ctx context.Context, fundType FundType, p
 		"product":    "EFund",
 		"version":    "6.4.5",
 	}
-	//logging.Debug(ctx, "EastMoney QueryFundListByPage "+apiurl+" begin", zap.Any("params", params))
-	//beginTime := time.Now()
 	apiurl, err := goutils.NewHTTPGetURLWithQueryString(ctx, apiurl, params)
 	if err != nil {
 		return RespFundList{}, err
@@ -197,13 +195,6 @@ func (e EastMoney) QueryFundListByPage(ctx context.Context, fundType FundType, p
 		"user-agent": uarand.GetRandom(),
 	}
 	err = goutils.HTTPGET(ctx, e.HTTPClient, apiurl, header, &resp)
-	//latency := time.Now().Sub(beginTime).Milliseconds()
-	// logging.Debug(
-	// 	ctx,
-	// 	"EastMoney QueryFundListByPage "+apiurl+" end",
-	// 	zap.Int64("latency(ms)", latency),
-	// 	// zap.Any("resp", resp),
-	// )
 	if err != nil {
 		return resp, err
 	}

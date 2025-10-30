@@ -9,22 +9,18 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/investool/cmds"
-	"github.com/axiaoxin-com/investool/models"
 	"github.com/axiaoxin-com/investool/version"
 	"github.com/spf13/viper"
 	"github.com/urfave/cli/v2"
 )
 
 var (
-	// DefaultLoglevel 日志级别默认值
-	DefaultLoglevel = "info"
 	// ProcessorOptions 要启动运行的进程可选项
 	ProcessorOptions = []string{cmds.ProcessorChecker, cmds.ProcessorExportor, cmds.ProcessorWebserver, cmds.ProcessorIndex, cmds.ProcessorJSON}
 )
 
 func init() {
 	viper.SetDefault("app.chan_size", 1)
-	models.InitGlobalVars()
 }
 
 func main() {
@@ -42,16 +38,6 @@ func main() {
 		Usage:   "show the version",
 	}
 
-	app.Flags = []cli.Flag{
-		&cli.StringFlag{
-			Name:        "loglevel",
-			Aliases:     []string{"l"},
-			Value:       DefaultLoglevel,
-			Usage:       "cmd 日志级别 [debug|info|warn|error]",
-			EnvVars:     []string{"INVESTOOL_CMD_LOGLEVEL"},
-			DefaultText: DefaultLoglevel,
-		},
-	}
 	app.BashComplete = func(c *cli.Context) {
 		if c.NArg() > 0 {
 			return

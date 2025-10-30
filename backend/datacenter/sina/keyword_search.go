@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"sort"
 	"strconv"
 	"strings"
@@ -45,7 +45,7 @@ func (s Sina) KeywordSearch(ctx context.Context, kw string) (results []SearchRes
 	}
 
 	trans := transform.NewReader(bytes.NewReader(resp), simplifiedchinese.GBK.NewDecoder())
-	utf8resp, err := ioutil.ReadAll(trans)
+	utf8resp, err := io.ReadAll(trans)
 	if err != nil {
 		logging.Error(ctx, "transform ReadAll error:"+err.Error())
 	}

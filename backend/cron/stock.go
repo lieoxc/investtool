@@ -3,24 +3,20 @@ package cron
 
 import (
 	"context"
-	"encoding/json"
-	"io/ioutil"
+	"fmt"
+	"time"
 
-	"github.com/axiaoxin-com/goutils"
 	"github.com/axiaoxin-com/investool/datacenter"
 	"github.com/axiaoxin-com/investool/models"
-	"github.com/axiaoxin-com/logging"
+	"github.com/sirupsen/logrus"
 )
 
 // SyncIndustryList 同步行业列表
 func SyncIndustryList() {
-	if !goutils.IsTradingDay() {
-		return
-	}
 	ctx := context.Background()
 	indlist, err := datacenter.EastMoney.QueryIndustryList(ctx)
 	if err != nil {
-		logging.Errorf(ctx, "SyncIndustryList QueryIndustryList error:", err)
+		logrus.Errorf("SyncIndustryList QueryIndustryList error: %v", err)
 		promSyncError.WithLabelValues("SyncIndustryList").Inc()
 		return
 	}
@@ -28,16 +24,31 @@ func SyncIndustryList() {
 		models.StockIndustryList = indlist
 	}
 
-	// 更新文件
-	b, err := json.Marshal(indlist)
-	if err != nil {
-		logging.Errorf(ctx, "SyncIndustryList json marshal error:", err)
-		promSyncError.WithLabelValues("SyncIndustryList").Inc()
-		return
+	// 保存数据到数据库
+	if models.DB != nil {
+		// 清空旧的行业数据
+		if err := models.DB.Exec("TRUNCATE TABLE industries").Error; err != nil {
+			logrus.Errorf("SyncIndustryList truncate error: %v", err)
+			promSyncError.WithLabelValues("SyncIndustryList").Inc()
+		}
+
+		// 批量插入新的行业数据
+		industries := make([]models.IndustryDB, 0, len(indlist))
+		for _, industry := range indlist {
+			industries = append(industries, models.IndustryDB{
+				Name:      industry,
+				UpdatedAt: time.Now(),
+			})
+		}
+
+		if len(industries) > 0 {
+			if err := models.DB.CreateInBatches(industries, 100).Error; err != nil {
+				logrus.Errorf("SyncIndustryList save to database error: %v", err)
+				promSyncError.WithLabelValues("SyncIndustryList").Inc()
+			} else {
+				logrus.Info(fmt.Sprintf("SyncIndustryList saved %d industries to database successfully", len(industries)))
+			}
+		}
 	}
-	if err := ioutil.WriteFile(models.IndustryListFilename, b, 0666); err != nil {
-		logging.Errorf(ctx, "SyncIndustryList WriteFile error:", err)
-		promSyncError.WithLabelValues("SyncIndustryList").Inc()
-		return
-	}
+
 }

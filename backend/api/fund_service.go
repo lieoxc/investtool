@@ -10,6 +10,7 @@ import (
 	"github.com/axiaoxin-com/investool/datacenter/eastmoney"
 	"github.com/axiaoxin-com/investool/models"
 	"github.com/axiaoxin-com/logging"
+	"github.com/sirupsen/logrus"
 )
 
 // FundService 基金服务
@@ -22,72 +23,230 @@ func NewFundService() *FundService {
 
 // GetFundIndex 获取4433基金列表
 func (s *FundService) GetFundIndex(ctx context.Context, params FundIndexParams) (*FundIndexResponse, error) {
-	fundList := models.Fund4433List
+	logrus.Info("GetFundIndex params:", params)
+	// 检查数据库是否初始化
+	if models.DB == nil {
+		logging.Error(ctx, "database not initialized")
+		return &FundIndexResponse{}, nil
+	}
+	var allFound int64
+	if err := models.DB.Model(&models.FundDB{}).Count(&allFound).Error; err != nil {
+		logrus.Error("GetFundIndex get all found error:" + err.Error())
+		return &FundIndexResponse{}, nil
+	}
 
-	// 过滤
+	// 从数据库获取4433基金
+	var fundDBs []models.FundDB
+	query := models.DB.Model(&models.FundDB{}).Where("is_4433 = ?", true)
+
+	// 如果指定了基金类型，添加类型过滤
 	if params.Type != "" {
-		fundList = fundList.FilterByType(params.Type)
+		query = query.Where("type = ?", params.Type)
 	}
 
-	// 排序
-	if params.Sort > 0 {
-		fundList.Sort(models.FundSortType(params.Sort))
+	// 获取总数
+	var fourFourThreeCount int64
+	if err := query.Count(&fourFourThreeCount).Error; err != nil {
+		logrus.Error("GetFundIndex get four four three count error:" + err.Error())
+		return &FundIndexResponse{}, nil
 	}
-
 	// 分页
-	totalCount := len(fundList)
-	pagi := goutils.PaginateByPageNumSize(totalCount, params.PageNum, params.PageSize)
-	result := fundList[pagi.StartIndex:pagi.EndIndex]
+	pagi := goutils.PaginateByPageNumSize(int(fourFourThreeCount), params.PageNum, params.PageSize)
+
+	// 重新构建查询（因为 Count 已经修改了 query）
+	query = models.DB.Model(&models.FundDB{}).Where("is_4433 = ?", true)
+	if params.Type != "" {
+		query = query.Where("type = ?", params.Type)
+	}
+
+	// 这里需要根据sort参数进行排序
+	orderClause := getOrderClause(models.FundSortType(params.Sort))
+	if err := query.Order(orderClause).Offset(pagi.StartIndex).Limit(pagi.PageSize).Find(&fundDBs).Error; err != nil {
+		return nil, err
+	}
+
+	// 转换为基金列表
+	fundList := make([]*models.Fund, len(fundDBs))
+	for i, fd := range fundDBs {
+		fundList[i] = fd.ToFund()
+	}
+
+	// 获取所有基金类型
+	var fundTypes []string
+	if err := models.DB.Model(&models.FundDB{}).
+		Where("is_4433 = ?", true).
+		Distinct("type").
+		Pluck("type", &fundTypes).Error; err != nil {
+		logrus.Error("GetFundIndex get fund types error:" + err.Error())
+	}
+
+	// 计算总页数，避免除零
+	totalPages := 0
+	if pagi.PageSize > 0 {
+		totalPages = int(fourFourThreeCount) / pagi.PageSize
+		if int(fourFourThreeCount)%pagi.PageSize > 0 {
+			totalPages++
+		}
+	}
 
 	return &FundIndexResponse{
-		FundList: result,
+		FundList: fundList,
 		Pagination: PaginationResponse{
 			PageNum:    pagi.PageNum,
 			PageSize:   pagi.PageSize,
-			Total:      len(fundList),
-			TotalPages: len(fundList) / pagi.PageSize,
+			Total:      int(fourFourThreeCount),
+			TotalPages: totalPages,
 			StartIndex: pagi.StartIndex,
 			EndIndex:   pagi.EndIndex,
 		},
 		UpdatedAt:     models.SyncFundTime.Format("2006-01-02 15:04:05"),
-		AllFundCount:  len(models.FundAllList),
-		Fund4433Count: totalCount,
-		FundTypes:     models.Fund4433TypeList,
+		AllFundCount:  int(allFound),
+		Fund4433Count: int(fourFourThreeCount),
+		FundTypes:     fundTypes,
 	}, nil
+}
+
+// getOrderClause 根据排序类型返回 ORDER BY 子句
+func getOrderClause(sort models.FundSortType) string {
+	switch sort {
+	case models.FundSortTypeWeek:
+		return "performance->>'week_profit_ratio' DESC"
+	case models.FundSortTypeMonth1:
+		return "performance->>'month_1_profit_ratio' DESC"
+	case models.FundSortTypeMonth3:
+		return "performance->>'month_3_profit_ratio' DESC"
+	case models.FundSortTypeMonth6:
+		return "performance->>'month_6_profit_ratio' DESC"
+	case models.FundSortTypeYear1:
+		return "performance->>'year_1_profit_ratio' DESC"
+	case models.FundSortTypeYear2:
+		return "performance->>'year_2_profit_ratio' DESC"
+	case models.FundSortTypeYear3:
+		return "performance->>'year_3_profit_ratio' DESC"
+	case models.FundSortTypeYear5:
+		return "performance->>'year_5_profit_ratio' DESC"
+	case models.FundSortTypeThisYear:
+		return "performance->>'this_year_profit_ratio' DESC"
+	case models.FundSortTypeHistorical:
+		return "performance->>'historical_profit_ratio' DESC"
+	default:
+		return "updated_at DESC"
+	}
 }
 
 // GetFundFilter 基金筛选
 func (s *FundService) GetFundFilter(ctx context.Context, params FundFilterParams) (*FundIndexResponse, error) {
-	fundList := models.FundAllList.Filter(ctx, params.ParamFundListFilter)
-	fundTypes := fundList.Types()
+	// 从数据库构建查询
+	var fundDBs []models.FundDB
+	query := models.DB.Model(&models.FundDB{})
 
-	// 过滤
+	// 应用筛选条件
+	filter := params.ParamFundListFilter
+
+	// 基金类型筛选
+	if len(filter.Types) > 0 {
+		query = query.Where("type IN ?", filter.Types)
+	}
+
+	// 基金规模筛选
+	if filter.MinScale > 0 {
+		query = query.Where("net_assets_scale >= ?", filter.MinScale*100000000)
+	}
+	if filter.MaxScale > 0 {
+		query = query.Where("net_assets_scale <= ?", filter.MaxScale*100000000)
+	}
+
+	// 成立年限筛选（需要从成立日期计算）
+	// 这里简化处理，后续可以优化
+
+	// 绩效排名筛选（使用 JSONB 查询）
+	if filter.Year1RankRatio > 0 {
+		query = query.Where("(performance->>'year_1_rank_ratio')::float <= ?", filter.Year1RankRatio)
+	}
+	if filter.Month6RankRatio > 0 {
+		query = query.Where("(performance->>'month_6_rank_ratio')::float <= ?", filter.Month6RankRatio)
+	}
+	if filter.Month3RankRatio > 0 {
+		query = query.Where("(performance->>'month_3_rank_ratio')::float <= ?", filter.Month3RankRatio)
+	}
+
+	// 基金经理年限筛选（通过经理关联表）
+	if filter.MinManagerYears > 0 {
+		subQuery := models.DB.Model(&models.FundManagerRelationDB{}).
+			Where("manage_days >= ?", filter.MinManagerYears*365).
+			Select("fund_code")
+		query = query.Where("code IN (?)", subQuery)
+	}
+
+	// 波动率筛选
+	if filter.Max135AvgStddev > 0 {
+		query = query.Where("(stddev->>'avg_135')::float <= ?", filter.Max135AvgStddev)
+	}
+
+	// 夏普比率筛选
+	if filter.Min135AvgSharp > 0 {
+		query = query.Where("(sharp->>'avg_135')::float >= ?", filter.Min135AvgSharp)
+	}
+
+	// 最大回撤筛选
+	if filter.Max135AvgRetr > 0 {
+		query = query.Where("(max_retracement->>'avg_135')::float <= ?", filter.Max135AvgRetr)
+	}
+
+	// 基金类型额外过滤
 	if params.ParamFundIndex.Type != "" {
-		fundList = fundList.FilterByType(params.ParamFundIndex.Type)
+		query = query.Where("type = ?", params.ParamFundIndex.Type)
 	}
 
-	// 排序
-	if params.ParamFundIndex.Sort > 0 {
-		fundList.Sort(models.FundSortType(params.ParamFundIndex.Sort))
-	}
+	// 获取总数
+	var totalCount int64
+	query.Count(&totalCount)
 
 	// 分页
-	pagi := goutils.PaginateByPageNumSize(len(fundList), params.ParamFundIndex.PageNum, params.ParamFundIndex.PageSize)
-	result := fundList[pagi.StartIndex:pagi.EndIndex]
+	pagi := goutils.PaginateByPageNumSize(int(totalCount), params.ParamFundIndex.PageNum, params.ParamFundIndex.PageSize)
+
+	// 排序
+	orderClause := getOrderClause(models.FundSortType(params.ParamFundIndex.Sort))
+	if err := query.Order(orderClause).Offset(pagi.StartIndex).Limit(pagi.PageSize).Find(&fundDBs).Error; err != nil {
+		return nil, err
+	}
+
+	// 转换为基金列表
+	fundList := make([]*models.Fund, len(fundDBs))
+	for i, fd := range fundDBs {
+		fundList[i] = fd.ToFund()
+	}
+
+	// 获取基金类型
+	var fundTypes []string
+	if err := models.DB.Model(&models.FundDB{}).
+		Distinct("type").
+		Pluck("type", &fundTypes).Error; err != nil {
+		logging.Error(ctx, "GetFundFilter get fund types error:"+err.Error())
+	}
+
+	// 计算总页数，避免除零
+	totalPages := 0
+	if pagi.PageSize > 0 {
+		totalPages = int(totalCount) / pagi.PageSize
+		if int(totalCount)%pagi.PageSize > 0 {
+			totalPages++
+		}
+	}
 
 	return &FundIndexResponse{
-		FundList: result,
+		FundList: fundList,
 		Pagination: PaginationResponse{
 			PageNum:    pagi.PageNum,
 			PageSize:   pagi.PageSize,
-			Total:      len(fundList),
-			TotalPages: len(fundList) / pagi.PageSize,
+			Total:      int(totalCount),
+			TotalPages: totalPages,
 			StartIndex: pagi.StartIndex,
 			EndIndex:   pagi.EndIndex,
 		},
 		UpdatedAt:     models.SyncFundTime.Format("2006-01-02 15:04:05"),
-		AllFundCount:  len(models.FundAllList),
-		Fund4433Count: len(fundList),
+		AllFundCount:  int(totalCount),
+		Fund4433Count: int(totalCount),
 		FundTypes:     fundTypes,
 	}, nil
 }
@@ -151,7 +310,7 @@ func (s *FundService) CheckFund(ctx context.Context, params FundCheckParams) (*F
 // GetFundManagers 基金经理筛选
 func (s *FundService) GetFundManagers(ctx context.Context, params FundManagerParams) (*FundManagerResponse, error) {
 	// 筛选
-	managers := models.FundManagers.Filter(ctx, eastmoney.ParamFundManagerFilter{
+	managers := eastmoney.FundManagerInfoList{}.Filter(ctx, eastmoney.ParamFundManagerFilter{
 		MinWorkingYears:     params.MinWorkingYears,
 		MinYieldse:          params.MinYieldse,
 		MaxCurrentFundCount: params.MaxCurrentFundCount,
@@ -207,13 +366,22 @@ func (s *FundService) GetFundManagers(ctx context.Context, params FundManagerPar
 		result = append(result, r)
 	}
 
+	// 计算总页数，避免除零
+	totalPages := 0
+	if pagi.PageSize > 0 {
+		totalPages = len(managers) / pagi.PageSize
+		if len(managers)%pagi.PageSize > 0 {
+			totalPages++
+		}
+	}
+
 	return &FundManagerResponse{
 		Managers: []FundManagerInfo{},
 		Pagination: PaginationResponse{
 			PageNum:    pagi.PageNum,
 			PageSize:   pagi.PageSize,
 			Total:      len(managers),
-			TotalPages: len(managers) / pagi.PageSize,
+			TotalPages: totalPages,
 			StartIndex: pagi.StartIndex,
 			EndIndex:   pagi.EndIndex,
 		},

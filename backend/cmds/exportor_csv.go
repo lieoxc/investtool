@@ -4,7 +4,7 @@ package cmds
 
 import (
 	"context"
-	"io/ioutil"
+	"os"
 
 	"github.com/gocarina/gocsv"
 )
@@ -15,7 +15,7 @@ func (e Exportor) ExportCSV(ctx context.Context, filename string) (result []byte
 	result, err = gocsv.MarshalBytes(&e.Stocks)
 
 	if filename != "" {
-		err = ioutil.WriteFile(filename, result, 0666)
+		err = os.WriteFile(filename, result, 0666)
 	}
 	return
 }

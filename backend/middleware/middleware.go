@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/axiaoxin-com/logging"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 // CORS 跨域中间件
@@ -29,7 +29,7 @@ func CORS() gin.HandlerFunc {
 // Recovery 恢复中间件
 func Recovery() gin.HandlerFunc {
 	return gin.CustomRecovery(func(c *gin.Context, recovered interface{}) {
-		logging.Errorf(c, "Panic recovered: %v", recovered)
+		logrus.Errorf("Panic recovered: %v", recovered)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":    http.StatusInternalServerError,
 			"message": "内部服务器错误",

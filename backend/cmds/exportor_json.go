@@ -5,7 +5,7 @@ package cmds
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"os"
 )
 
 // ExportJSON 数据导出为 JSON 文件
@@ -13,7 +13,7 @@ import (
 func (e Exportor) ExportJSON(ctx context.Context, filename string) (result []byte, err error) {
 	result, err = json.MarshalIndent(e.Stocks, "", "  ")
 	if filename != "" {
-		err = ioutil.WriteFile(filename, result, 0666)
+		err = os.WriteFile(filename, result, 0666)
 	}
 	return
 }
