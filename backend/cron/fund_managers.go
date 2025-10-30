@@ -19,7 +19,7 @@ func SyncFundManagers() {
 		return
 	}
 
-	managers, err := datacenter.EastMoney.FundMangers(ctx, "zq", "penavgrowth", "desc")
+	managers, err := datacenter.EastMoney.FundMangers(ctx, "all", "penavgrowth", "desc")
 	if err != nil {
 		logrus.Errorf("SyncFundManagers error: %v", err)
 		return

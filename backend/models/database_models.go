@@ -188,6 +188,7 @@ func (f *Fund) ToFundDB() *FundDB {
 		Performance:           string(performanceJSON),
 		LastSyncTime:          time.Now(),
 		LastUpdateTime:        time.Now(),
+		Is4433:                false,
 	}
 }
 

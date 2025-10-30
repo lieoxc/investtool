@@ -1,6 +1,7 @@
 package cmds
 
 import (
+	"github.com/axiaoxin-com/investool/cron"
 	"github.com/axiaoxin-com/investool/models"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
@@ -48,9 +49,9 @@ func ActionJSON() func(c *cli.Context) error {
 		}
 
 		if c.Bool("d") {
-			//cron.SyncFund()
-			//cron.SyncFundManagers()
-			//cron.SyncIndustryList()
+			cron.SyncFund()
+			// cron.SyncFundManagers()
+			// cron.SyncIndustryList()
 			return nil
 		}
 		return nil

@@ -27,7 +27,50 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
+    networks:
+      - fund_network
+  frontend:
+    image: ghcr.io/lieoxc/investool-frontend:v1.0
+    ports:
+      - "8088:8080"
+    environment:
+      - "TZ=Asia/Shanghai"
+      - "BACKEND_HOST=http://backend:9999"
+    depends_on:
+      backend:
+        condition: service_started
+    volumes:
+      - nginx:/etc/nginx
+    restart: unless-stopped
+    networks:
+      - fund_network
+  backend:
+    image: ghcr.io/lieoxc/investool-backend:v1.0
+    ports:
+      - "9999:9999"
+    environment:
+      - "TZ=Asia/Shanghai"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      gmqtt:
+        condition: service_started
+    volumes:
+      - go_configs:/go/src/app/configs
+    restart: unless-stopped
+    networks:
+      - fund_network
+      
 volumes:
   postgres_data:
     driver: local
+networks:
+  fund_network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16  # 定义网络的子网范围
+          gateway: 172.20.0.1    # 定义网关地址
