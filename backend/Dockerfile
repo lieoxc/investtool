@@ -4,6 +4,7 @@ WORKDIR $GOPATH/src/app
 ADD . ./
 ENV GO111MODULE=on
 ENV GOPROXY="https://goproxy.io,direct"
+RUN go mod tidy
 RUN go build -o investool .
 
 FROM alpine:latest
