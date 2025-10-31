@@ -3,7 +3,7 @@ FROM golang:1.20-alpine AS builder
 WORKDIR $GOPATH/src/app
 ADD . ./
 ENV GO111MODULE=on
-ENV GOPROXY="https://goproxy.io"
+ENV GOPROXY="https://goproxy.io,direct"
 RUN go build -o investool .
 
 FROM alpine:latest
