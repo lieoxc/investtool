@@ -6,8 +6,8 @@ import (
 	"strconv"
 
 	"github.com/axiaoxin-com/investool/datacenter/eastmoney"
-	"github.com/axiaoxin-com/logging"
 	"github.com/olekukonko/tablewriter"
+	"github.com/sirupsen/logrus"
 )
 
 func showIndexData(data *eastmoney.IndexData) {
@@ -59,7 +59,7 @@ func showIndexStocks(stocks []eastmoney.ZSCFGItem) {
 		if stock.Marketcappct != "" && stock.Marketcappct != "--" {
 			v, err := strconv.ParseFloat(stock.Marketcappct, 64)
 			if err != nil {
-				logging.Error(nil, err.Error())
+				logrus.Error(err.Error())
 				continue
 			}
 			sum += v

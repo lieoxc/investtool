@@ -8,8 +8,7 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // RespIndustryList 接口返回的 json 结构
@@ -36,7 +35,7 @@ func (e EastMoney) QueryIndustryList(ctx context.Context) ([]string, error) {
 		"type":   "RPTA_APP_INDUSTRY",
 		"sty":    "ALL",
 	}
-	logging.Debug(ctx, "EastMoney IndustryList "+apiurl+" begin", zap.Any("reqData", reqData))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"reqData": reqData}).Debug("EastMoney IndustryList " + apiurl + " begin")
 	beginTime := time.Now()
 	req, err := goutils.NewHTTPMultipartReq(ctx, apiurl, reqData)
 	if err != nil {
@@ -45,10 +44,7 @@ func (e EastMoney) QueryIndustryList(ctx context.Context) ([]string, error) {
 	resp := RespIndustryList{}
 	err = goutils.HTTPPOST(ctx, e.HTTPClient, req, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(ctx, "EastMoney IndustryList "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Debug("EastMoney IndustryList " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}

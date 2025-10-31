@@ -12,7 +12,7 @@ import (
 	"github.com/axiaoxin-com/investool/datacenter/eastmoney"
 	"github.com/axiaoxin-com/investool/datacenter/eniu"
 	"github.com/axiaoxin-com/investool/datacenter/zszx"
-	"github.com/axiaoxin-com/logging"
+	"github.com/sirupsen/logrus"
 )
 
 // Stock 接口返回的股票信息结构
@@ -127,11 +127,11 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		defer wg.Done()
 		hf, err := datacenter.EastMoney.QueryHistoricalFinaMainData(ctx, s.BaseInfo.Secucode)
 		if err != nil {
-			logging.Error(ctx, "NewStock QueryHistoricalFinaMainData err:"+err.Error())
+			logrus.WithContext(ctx).Error("NewStock QueryHistoricalFinaMainData err:" + err.Error())
 			return
 		}
 		if len(hf) == 0 {
-			logging.Error(ctx, "HistoricalFinaMainData is empty")
+			logrus.WithContext(ctx).Error("HistoricalFinaMainData is empty")
 			return
 		}
 		s.HistoricalFinaMainData = hf
@@ -139,7 +139,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		// 历史市盈率 && 合理价格
 		peList, err := datacenter.EastMoney.QueryHistoricalPEList(ctx, s.BaseInfo.Secucode)
 		if err != nil {
-			logging.Error(ctx, "NewStock QueryHistoricalPEList err:"+err.Error())
+			logrus.WithContext(ctx).Error("NewStock QueryHistoricalPEList err:" + err.Error())
 			return
 		}
 		s.HistoricalPEList = peList
@@ -153,7 +153,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		lastYearAvgRevIncrRatio := s.HistoricalFinaMainData.GetAvgRevenueIncreasingRatioByYear(ctx, thisYear-1)
 		// nil fix: 新的一年刚开始时，上一年的年报还没披露，年份数据全部-1，保证有数据返回
 		if lastYearReport == nil {
-			logging.Debug(ctx, "NewStock get last year report nil, use before last year report")
+			logrus.WithContext(ctx).Debug("NewStock get last year report nil, use before last year report")
 			lastYearReport = beforeLastYearReport
 			beforeLastYearReport = s.HistoricalFinaMainData.GetReport(ctx, time.Now().Year()-3, eastmoney.FinaReportTypeYear)
 			thisYearAvgRevIncrRatio = s.HistoricalFinaMainData.GetAvgRevenueIncreasingRatioByYear(ctx, thisYear-1)
@@ -162,7 +162,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		// pe 中位数
 		peMidVal, err := peList.GetMidValue(ctx)
 		if err != nil {
-			logging.Error(ctx, "NewStock GetMidValue err:"+err.Error())
+			logrus.WithContext(ctx).Error("NewStock GetMidValue err:" + err.Error())
 			return
 		}
 		s.RightPrice = peMidVal * (lastYearReport.Epsjb * (1 + thisYearAvgRevIncrRatio/100.0))
@@ -176,7 +176,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		defer wg.Done()
 		valMap, err := datacenter.EastMoney.QueryValuationStatus(ctx, s.BaseInfo.Secucode)
 		if err != nil {
-			logging.Error(ctx, "NewStock QueryValuationStatus err:"+err.Error())
+			logrus.WithContext(ctx).Error("NewStock QueryValuationStatus err:" + err.Error())
 			return
 		}
 		s.ValuationMap = valMap
@@ -188,7 +188,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		defer wg.Done()
 		hisPrice, err := datacenter.Eniu.QueryHistoricalStockPrice(ctx, s.BaseInfo.Secucode)
 		if err != nil {
-			logging.Error(ctx, "NewStock QueryHistoricalStockPrice err:"+err.Error())
+			logrus.WithContext(ctx).Error("NewStock QueryHistoricalStockPrice err:" + err.Error())
 			return
 		}
 		s.HistoricalPrice = hisPrice
@@ -196,7 +196,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		// 历史波动率
 		hv, err := hisPrice.HistoricalVolatility(ctx, "YEAR")
 		if err != nil {
-			logging.Error(ctx, "NewStock HistoricalVolatility err:"+err.Error())
+			logrus.WithContext(ctx).Error("NewStock HistoricalVolatility err:" + err.Error())
 			return
 		}
 		s.HistoricalVolatility = hv
@@ -208,7 +208,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		defer wg.Done()
 		cp, err := datacenter.EastMoney.QueryCompanyProfile(ctx, s.BaseInfo.Secucode)
 		if err != nil {
-			logging.Error(ctx, "NewStock QueryCompanyProfile err:"+err.Error())
+			logrus.WithContext(ctx).Error("NewStock QueryCompanyProfile err:" + err.Error())
 			return
 		}
 		s.CompanyProfile = cp
@@ -220,7 +220,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		defer wg.Done()
 		finaPubDateList, err := datacenter.EastMoney.QueryFinaPublishDateList(ctx, s.BaseInfo.SecurityCode)
 		if err != nil {
-			logging.Error(ctx, "NewStock QueryFinaPublishDateList err:"+err.Error())
+			logrus.WithContext(ctx).Error("NewStock QueryFinaPublishDateList err:" + err.Error())
 			return
 		}
 		if len(finaPubDateList) > 0 {
@@ -236,7 +236,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		defer wg.Done()
 		orgRatings, err := datacenter.EastMoney.QueryOrgRating(ctx, s.BaseInfo.Secucode)
 		if err != nil {
-			logging.Debug(ctx, "NewStock QueryOrgRating err:"+err.Error())
+			logrus.WithContext(ctx).Debug("NewStock QueryOrgRating err:" + err.Error())
 			return
 		}
 		s.OrgRatingList = orgRatings
@@ -248,7 +248,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		defer wg.Done()
 		pps, err := datacenter.EastMoney.QueryProfitPredict(ctx, s.BaseInfo.Secucode)
 		if err != nil {
-			logging.Debug(ctx, "NewStock QueryProfitPredict err:"+err.Error())
+			logrus.WithContext(ctx).Debug("NewStock QueryProfitPredict err:" + err.Error())
 			return
 		}
 		s.ProfitPredictList = pps
@@ -260,7 +260,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		defer wg.Done()
 		jzpg, err := datacenter.EastMoney.QueryJiaZhiPingGu(ctx, s.BaseInfo.Secucode)
 		if err != nil {
-			logging.Debug(ctx, "NewStock QueryJiaZhiPingGu err:"+err.Error())
+			logrus.WithContext(ctx).Debug("NewStock QueryJiaZhiPingGu err:" + err.Error())
 			return
 		}
 		s.JZPG = jzpg
@@ -272,7 +272,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		defer wg.Done()
 		gincomeList, err := datacenter.EastMoney.QueryFinaGincomeData(ctx, s.BaseInfo.Secucode)
 		if err != nil {
-			logging.Error(ctx, "NewStock QueryFinaGincomeData err:"+err.Error())
+			logrus.WithContext(ctx).Error("NewStock QueryFinaGincomeData err:" + err.Error())
 			return
 		}
 		s.HistoricalGincomeList = gincomeList
@@ -291,7 +291,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		defer wg.Done()
 		cashflow, err := datacenter.EastMoney.QueryFinaCashflowData(ctx, s.BaseInfo.Secucode)
 		if err != nil {
-			logging.Error(ctx, "NewStock QueryFinaCashflowData err:"+err.Error())
+			logrus.WithContext(ctx).Error("NewStock QueryFinaCashflowData err:" + err.Error())
 			return
 		}
 		s.HistoricalCashflowList = cashflow
@@ -314,7 +314,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		defer wg.Done()
 		holders, err := datacenter.EastMoney.QueryFreeHolders(ctx, s.BaseInfo.Secucode)
 		if err != nil {
-			logging.Error(ctx, "NewStock QueryFreeHolders err:"+err.Error())
+			logrus.WithContext(ctx).Error("NewStock QueryFreeHolders err:" + err.Error())
 			return
 		}
 		s.FreeHoldersTop10 = holders
@@ -330,7 +330,7 @@ func NewStock(ctx context.Context, baseInfo eastmoney.StockInfo) (Stock, error) 
 		start := now.Add(d).Format("2006-01-02")
 		inflows, err := datacenter.Zszx.QueryMainMoneyNetInflows(ctx, s.BaseInfo.Secucode, start, end)
 		if err != nil {
-			logging.Error(ctx, "NewStock QueryMainMoneyNetInflows err:"+err.Error())
+			logrus.WithContext(ctx).Error("NewStock QueryMainMoneyNetInflows err:" + err.Error())
 			return
 		}
 		s.MainMoneyNetInflows = inflows

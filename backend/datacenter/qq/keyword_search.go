@@ -10,8 +10,7 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // SearchResult 搜索结果
@@ -27,11 +26,11 @@ type SearchResult struct {
 // KeywordSearch 关键词搜索， 股票、代码、拼音
 func (q QQ) KeywordSearch(ctx context.Context, kw string) (results []SearchResult, err error) {
 	apiurl := fmt.Sprintf("https://smartbox.gtimg.cn/s3/?v=2&q=%s&t=all&c=1", kw)
-	logging.Debug(ctx, "QQ KeywordSearch "+apiurl+" begin")
+	logrus.WithContext(ctx).Debug("QQ KeywordSearch " + apiurl + " begin")
 	beginTime := time.Now()
 	resp, err := goutils.HTTPGETRaw(ctx, q.HTTPClient, apiurl, nil)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(ctx, "QQ KeywordSearch "+apiurl+" end", zap.Int64("latency(ms)", latency), zap.Any("resp", string(resp)))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency, "resp": string(resp)}).Debug("QQ KeywordSearch " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}
@@ -45,13 +44,13 @@ func (q QQ) KeywordSearch(ctx context.Context, kw string) (results []SearchResul
 		v := strings.TrimSpace(lineitems[1])
 		respMap[k] = strings.Trim(v, `"`)
 	}
-	logging.Debugf(ctx, "respMap: %#v", respMap)
+	logrus.WithContext(ctx).Debugf("respMap: %#v", respMap)
 	resultsStrs := strings.Split(respMap["v_hint"], "^")
-	logging.Debugs(ctx, "resultsStrs:", resultsStrs)
+	logrus.WithContext(ctx).Debug("resultsStrs:", resultsStrs)
 	for _, rs := range resultsStrs {
 		matchedSlice := strings.Split(rs, "~")
 		if len(matchedSlice) < 3 {
-			logging.Debugf(ctx, "invalid matchedSlice:%v", matchedSlice)
+			logrus.WithContext(ctx).Debugf("invalid matchedSlice:%v", matchedSlice)
 			continue
 		}
 		market, securityCode, name := matchedSlice[0], matchedSlice[1], matchedSlice[2]

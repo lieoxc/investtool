@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/axiaoxin-com/investool/core"
-	"github.com/axiaoxin-com/logging"
 	"github.com/olekukonko/tablewriter"
+	"github.com/sirupsen/logrus"
 )
 
 // Check 对给定名称或代码进行检测，输出检测结果
@@ -18,9 +18,9 @@ func Check(ctx context.Context, keywords []string, opts core.CheckerOptions) (re
 	results = make(map[string]core.CheckResult)
 	searcher := core.NewSearcher(ctx)
 	stocks, err := searcher.SearchStocks(ctx, keywords)
-	if err != nil {
-		logging.Fatal(ctx, err.Error())
-	}
+    if err != nil {
+        logrus.WithContext(ctx).Fatal(err.Error())
+    }
 
 	for _, stock := range stocks {
 		checker := core.NewChecker(ctx, opts)

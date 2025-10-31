@@ -7,10 +7,9 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
 	"github.com/corpix/uarand"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // RespQueryFxsyl 债券收益率接口返回结果
@@ -42,7 +41,7 @@ func (c ChinaBond) QueryFxsyl(ctx context.Context, treeItemID, date string) ([][
 		date,
 		treeItemID,
 	)
-	logging.Debug(ctx, "ChinaBond QueryFxsyl "+apiurl+" begin")
+	logrus.WithContext(ctx).Debug("ChinaBond QueryFxsyl " + apiurl + " begin")
 	beginTime := time.Now()
 	resp := RespQueryFxsyl{}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiurl, nil)
@@ -53,12 +52,10 @@ func (c ChinaBond) QueryFxsyl(ctx context.Context, treeItemID, date string) ([][
 	req.Header.Set("User-Agent", uarand.GetRandom())
 	err = goutils.HTTPPOST(ctx, c.HTTPClient, req, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"ChinaBond QueryFxsyl "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{
+		"latency(ms)": latency,
+		"resp":        resp,
+	}).Debug("ChinaBond QueryFxsyl " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +96,7 @@ func (c ChinaBond) QueryCurrentSyl(ctx context.Context, bondName string) (float6
 func (c ChinaBond) QueryAAACompanyBondSyl(ctx context.Context) float64 {
 	syl, err := c.QueryCurrentSyl(ctx, "中债证券公司债收益率曲线(AAA)")
 	if err != nil {
-		logging.Error(ctx, "QueryCurrentSyl error:"+err.Error())
+		logrus.WithContext(ctx).Error("QueryCurrentSyl error:" + err.Error())
 	}
 	return syl
 }

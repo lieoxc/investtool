@@ -16,7 +16,6 @@ import (
 	"github.com/axiaoxin-com/investool/datacenter/eastmoney"
 	"github.com/axiaoxin-com/investool/datacenter/sina"
 	"github.com/axiaoxin-com/investool/models"
-	"github.com/axiaoxin-com/logging"
 	"github.com/sirupsen/logrus"
 )
 
@@ -46,14 +45,14 @@ func (s Searcher) SearchStocks(ctx context.Context, keywords []string) (map[stri
 			}()
 			searchResults, err := datacenter.Sina.KeywordSearch(ctx, kw)
 			if err != nil {
-				logging.Errorf(ctx, "search %s error:%s", kw, err.Error())
+				logrus.WithContext(ctx).Errorf("search %s error:%s", kw, err.Error())
 				return
 			}
 			if len(searchResults) == 0 {
-				logging.Warnf(ctx, "search %s no data", kw)
+				logrus.WithContext(ctx).Warnf("search %s no data", kw)
 				return
 			}
-			logging.Infof(ctx, "search keyword:%s results:%+v, %+v matched", kw, searchResults, searchResults[0])
+			logrus.WithContext(ctx).Infof("search keyword:%s results:%+v, %+v matched", kw, searchResults, searchResults[0])
 			mu.Lock()
 			matchedResults = append(matchedResults, searchResults[0])
 			mu.Unlock()
@@ -81,7 +80,7 @@ func (s Searcher) SearchStocks(ctx context.Context, keywords []string) (map[stri
 			}()
 			mstock, err := models.NewStock(ctx, stock)
 			if err != nil {
-				logging.Errorf(ctx, "%s new models stock error:%v", stock.SecurityCode, err.Error())
+				logrus.WithContext(ctx).Errorf("%s new models stock error:%v", stock.SecurityCode, err.Error())
 				return
 			}
 			mu.Lock()

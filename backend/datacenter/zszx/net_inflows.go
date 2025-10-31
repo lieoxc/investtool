@@ -11,8 +11,7 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // NetInflow 资金净流入详情
@@ -81,7 +80,7 @@ func (n NetInflowList) SumMainNetIn(ctx context.Context) float64 {
 	for _, i := range n {
 		mainNetIn, err := strconv.ParseFloat(i.MainMnyNetIn, 64)
 		if err != nil {
-			logging.Errorf(ctx, "Parse MainMnyNetIn:%v to Float error:%v", i.MainMnyNetIn, err)
+			logrus.WithContext(ctx).Errorf("Parse MainMnyNetIn:%v to Float error:%v", i.MainMnyNetIn, err)
 		}
 		netFlowin += mainNetIn
 	}
@@ -115,7 +114,7 @@ func (z Zszx) QueryMainMoneyNetInflows(ctx context.Context, secuCode, startDate,
 		"ecode":     marketCode,
 		"scode":     stockCode,
 	}
-	logging.Debug(ctx, "Zszx QueryMainMoneyNetInflows "+apiurl+" begin", zap.Any("params", params))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"params": params}).Debug("Zszx QueryMainMoneyNetInflows " + apiurl + " begin")
 	beginTime := time.Now()
 	apiurl, err := goutils.NewHTTPGetURLWithQueryString(ctx, apiurl, params)
 	if err != nil {
@@ -124,12 +123,10 @@ func (z Zszx) QueryMainMoneyNetInflows(ctx context.Context, secuCode, startDate,
 	resp := RespMainMoneyNetInflows{}
 	err = goutils.HTTPGET(ctx, z.HTTPClient, apiurl, nil, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"Zszx QueryMainMoneyNetInflows "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{
+		"latency(ms)": latency,
+		"resp":        resp,
+	}).Debug("Zszx QueryMainMoneyNetInflows " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}

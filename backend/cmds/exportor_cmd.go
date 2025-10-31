@@ -10,7 +10,7 @@ import (
 
 	"github.com/axiaoxin-com/investool/core"
 	"github.com/axiaoxin-com/investool/datacenter/eastmoney"
-	"github.com/axiaoxin-com/logging"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
@@ -217,7 +217,9 @@ func ActionExportor() func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		ctx := context.Background()
 		loglevel := c.String("loglevel")
-		logging.SetLevel(loglevel)
+		if lvl, err := logrus.ParseLevel(loglevel); err == nil {
+			logrus.SetLevel(lvl)
+		}
 
 		checkerOpts := NewCheckerOptions(c)
 		checker := core.NewChecker(ctx, checkerOpts)
@@ -230,7 +232,7 @@ func ActionExportor() func(c *cli.Context) error {
 			"filter":  filter,
 			"checker": checker,
 		}, "", "  ")
-		logging.Debug(ctx, "exportor params:"+string(b))
+		logrus.WithContext(ctx).Debug("exportor params:" + string(b))
 		Export(ctx, c.String("filename"), selector)
 		return nil
 	}

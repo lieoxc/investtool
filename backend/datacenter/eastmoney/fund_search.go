@@ -9,9 +9,8 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
 	"github.com/corpix/uarand"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // SearchFundInfo 关键词搜索基金结构
@@ -25,7 +24,7 @@ type SearchFundInfo struct {
 func (e EastMoney) SearchFund(ctx context.Context, kw string) (results []SearchFundInfo, err error) {
 	count := 10
 	apiurl := fmt.Sprintf("https://fundsuggest.eastmoney.com/FundCodeNew.aspx?input=%s&count=%d&cb=x", kw, count)
-	logging.Debug(ctx, "EastMoney SearchFund "+apiurl+" begin")
+	logrus.WithContext(ctx).Debug("EastMoney SearchFund " + apiurl + " begin")
 	beginTime := time.Now()
 	header := map[string]string{
 		"user-agent": uarand.GetRandom(),
@@ -33,21 +32,18 @@ func (e EastMoney) SearchFund(ctx context.Context, kw string) (results []SearchF
 	resp, err := goutils.HTTPGETRaw(ctx, e.HTTPClient, apiurl, header)
 	strresp := string(resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(ctx, "EastMoney SearchFund "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", strresp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Debug("EastMoney SearchFund " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}
 
 	if len(strresp) < 6 {
-		logging.Warnf(ctx, "SearchFund invalid resp: %s", strresp)
+		logrus.WithContext(ctx).Warnf("SearchFund invalid resp: %s", strresp)
 		return nil, fmt.Errorf("无法找到相关基金")
 	}
 	reg, err := regexp.Compile(`"(?P<code>\d{6}),.+?,(?P<name>.+?),(?P<type>.+?),"`)
 	if err != nil {
-		logging.Error(ctx, "regexp error:"+err.Error())
+		logrus.WithContext(ctx).Error("regexp error:" + err.Error())
 		return nil, err
 	}
 	matched := reg.FindAllStringSubmatch(strresp, -1)

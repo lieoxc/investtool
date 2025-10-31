@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // FinaMainData 财报主要指标
@@ -357,10 +356,10 @@ func (h HistoricalFinaMainData) IsStability(
 	values := h.ValueList(ctx, valueType, yearsCount, reportType)
 	sd, err := goutils.StdDeviationFloat64(values)
 	if err != nil {
-		logging.Error(ctx, "IsStability StdDeviationFloat64 error:"+err.Error())
+		logrus.WithContext(ctx).Error("IsStability StdDeviationFloat64 error:" + err.Error())
 		return false
 	}
-	logging.Debugf(ctx, "StdDeviation value:%v", sd)
+	logrus.WithContext(ctx).Debugf("StdDeviation value:%v", sd)
 	// 2.51 这个值是取了37家银行的标准差的平均值作为标准
 	return sd <= 2.51
 }
@@ -447,7 +446,7 @@ func (e EastMoney) QueryHistoricalFinaMainData(ctx context.Context, secuCode str
 		"ps":     "100",
 		"sr":     "-1",
 	}
-	logging.Debug(ctx, "EastMoney QueryHistoricalFinaMainData "+apiurl+" begin", zap.Any("params", params))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"params": params}).Debug("EastMoney QueryHistoricalFinaMainData " + apiurl + " begin")
 	beginTime := time.Now()
 	apiurl, err := goutils.NewHTTPGetURLWithQueryString(ctx, apiurl, params)
 	if err != nil {
@@ -456,12 +455,7 @@ func (e EastMoney) QueryHistoricalFinaMainData(ctx context.Context, secuCode str
 	resp := RespFinaMainData{}
 	err = goutils.HTTPGET(ctx, e.HTTPClient, apiurl, nil, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"EastMoney QueryHistoricalFinaMainData "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Debug("EastMoney QueryHistoricalFinaMainData " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}
@@ -512,7 +506,7 @@ func (e EastMoney) QueryFinaPublishDateList(ctx context.Context, securityCode st
 		"p":      "1",
 		"sr":     "-1,-1",
 	}
-	logging.Debug(ctx, "EastMoney QueryFinaPublishDate "+apiurl+" begin", zap.Any("params", params))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"params": params}).Debug("EastMoney QueryFinaPublishDate " + apiurl + " begin")
 	beginTime := time.Now()
 	apiurl, err := goutils.NewHTTPGetURLWithQueryString(ctx, apiurl, params)
 	if err != nil {
@@ -521,12 +515,7 @@ func (e EastMoney) QueryFinaPublishDateList(ctx context.Context, securityCode st
 	resp := RespFinaPublishDate{}
 	err = goutils.HTTPGET(ctx, e.HTTPClient, apiurl, nil, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"EastMoney QueryFinaPublishDate "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Debug("EastMoney QueryFinaPublishDate " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}

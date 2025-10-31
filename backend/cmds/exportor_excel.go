@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
-	"github.com/axiaoxin-com/logging"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -74,11 +74,11 @@ func (e Exportor) ExportExcel(ctx context.Context, filename string) (result []by
 	headersLen := len(headers)
 	headerStyle, err := f.NewStyle(HeaderStyle)
 	if err != nil {
-		logging.Error(ctx, "New HeaderStyle error:"+err.Error())
+		logrus.WithContext(ctx).Error("New HeaderStyle error:" + err.Error())
 	}
 	bodyStyle, err := f.NewStyle(BodyStyle)
 	if err != nil {
-		logging.Error(ctx, "New BodyStyle error:"+err.Error())
+		logrus.WithContext(ctx).Error("New BodyStyle error:" + err.Error())
 	}
 	// 创建 sheet
 	for _, sheet := range sheets {
@@ -98,7 +98,7 @@ func (e Exportor) ExportExcel(ctx context.Context, filename string) (result []by
 			}
 			col, err := excelize.ColumnNumberToName(colNum)
 			if err != nil {
-				logging.Error(ctx, "CoordinatesToCellName error:"+err.Error())
+				logrus.WithContext(ctx).Error("CoordinatesToCellName error:" + err.Error())
 			}
 			f.SetColWidth(sheet, col, col, width)
 			// 设置表头行高
@@ -110,12 +110,12 @@ func (e Exportor) ExportExcel(ctx context.Context, filename string) (result []by
 		// 设置表头样式
 		hcell, err := excelize.CoordinatesToCellName(1, 1)
 		if err != nil {
-			logging.Error(ctx, "CoordinatesToCellName error:"+err.Error())
+			logrus.WithContext(ctx).Error("CoordinatesToCellName error:" + err.Error())
 			continue
 		}
 		vcell, err := excelize.CoordinatesToCellName(headersLen, 1)
 		if err != nil {
-			logging.Error(ctx, "CoordinatesToCellName error:"+err.Error())
+			logrus.WithContext(ctx).Error("CoordinatesToCellName error:" + err.Error())
 			continue
 		}
 		f.SetCellStyle(sheet, hcell, vcell, headerStyle)
@@ -123,12 +123,12 @@ func (e Exportor) ExportExcel(ctx context.Context, filename string) (result []by
 		// 设置表格样式
 		hcell, err = excelize.CoordinatesToCellName(1, 2)
 		if err != nil {
-			logging.Error(ctx, "CoordinatesToCellName error:"+err.Error())
+			logrus.Error(ctx, "CoordinatesToCellName error:"+err.Error())
 			continue
 		}
 		vcell, err = excelize.CoordinatesToCellName(headersLen, stocksCount+3)
 		if err != nil {
-			logging.Error(ctx, "CoordinatesToCellName error:"+err.Error())
+			logrus.Error(ctx, "CoordinatesToCellName error:"+err.Error())
 			continue
 		}
 		f.SetCellStyle(sheet, hcell, vcell, bodyStyle)
@@ -141,18 +141,18 @@ func (e Exportor) ExportExcel(ctx context.Context, filename string) (result []by
 	})
 	descStartCell, err := excelize.CoordinatesToCellName(1, stocksCount+3)
 	if err != nil {
-		logging.Error(ctx, "CoordinatesToCellName error:"+err.Error())
+		logrus.WithContext(ctx).Error("CoordinatesToCellName error:" + err.Error())
 	}
 	descEndCell, err := excelize.CoordinatesToCellName(headersLen, stocksCount+3)
 	if err != nil {
-		logging.Error(ctx, "CoordinatesToCellName error:"+err.Error())
+		logrus.WithContext(ctx).Error("CoordinatesToCellName error:" + err.Error())
 	}
 	for _, sheet := range sheets {
 		// 写 header
 		for i, header := range headers {
 			axis, err := excelize.CoordinatesToCellName(i+1, 1)
 			if err != nil {
-				logging.Error(ctx, "CoordinatesToCellName error:"+err.Error())
+				logrus.WithContext(ctx).Error("CoordinatesToCellName error:" + err.Error())
 				continue
 			}
 			f.SetCellValue(sheet, axis, header)
@@ -189,7 +189,7 @@ func (e Exportor) ExportExcel(ctx context.Context, filename string) (result []by
 				col := k + 1
 				axis, err := excelize.CoordinatesToCellName(col, row)
 				if err != nil {
-					logging.Error(ctx, "CoordinatesToCellName error:"+err.Error())
+					logrus.Error(ctx, "CoordinatesToCellName error:"+err.Error())
 					continue
 				}
 				value := headerValueMap[header]

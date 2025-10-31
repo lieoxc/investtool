@@ -10,8 +10,7 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // Filter 我的选股指标
@@ -237,7 +236,7 @@ func (e EastMoney) QuerySelectedStocksWithFilter(ctx context.Context, filter Fil
 		"p":      "1",      // page
 		"ps":     "100000", // page size
 	}
-	logging.Info(ctx, "EastMoney QuerySelectedStocksWithFilter "+apiurl+" begin", zap.Any("reqData", reqData))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"reqData": reqData}).Info("EastMoney QuerySelectedStocksWithFilter " + apiurl + " begin")
 	beginTime := time.Now()
 	req, err := goutils.NewHTTPMultipartReq(ctx, apiurl, reqData)
 	if err != nil {
@@ -246,12 +245,7 @@ func (e EastMoney) QuerySelectedStocksWithFilter(ctx context.Context, filter Fil
 	resp := RespSelectStocks{}
 	err = goutils.HTTPPOST(ctx, e.HTTPClient, req, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Info(
-		ctx,
-		"EastMoney SelectStocksWithFilter "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Info("EastMoney SelectStocksWithFilter " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}
@@ -262,12 +256,12 @@ func (e EastMoney) QuerySelectedStocksWithFilter(ctx context.Context, filter Fil
 	for _, i := range resp.Result.Data {
 		// 排除创业板
 		if filter.ExcludeCYB && strings.HasPrefix(i.Secucode, "300") {
-			logging.Debugf(ctx, "EastMoney SelectStocksWithFilter ExcludeCYB %s %s", i.SecurityNameAbbr, i.Secucode)
+			logrus.WithContext(ctx).Debugf("EastMoney SelectStocksWithFilter ExcludeCYB %s %s", i.SecurityNameAbbr, i.Secucode)
 			continue
 		}
 		// 排除科创板
 		if filter.ExcludeKCB && strings.HasPrefix(i.Secucode, "688") {
-			logging.Debugf(ctx, "EastMoney SelectStocksWithFilter ExcludeKCB %s %s", i.SecurityNameAbbr, i.Secucode)
+			logrus.WithContext(ctx).Debugf("EastMoney SelectStocksWithFilter ExcludeKCB %s %s", i.SecurityNameAbbr, i.Secucode)
 			continue
 		}
 		result = append(result, i)

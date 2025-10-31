@@ -5,9 +5,8 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
 	"github.com/corpix/uarand"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // TreeItem 债券曲线树节点
@@ -27,7 +26,7 @@ type RespQueryTree []TreeItem
 // QueryTree 查询债券曲线树数据，返回key为债券曲线名称，value为曲线名称对应的随机id
 func (c ChinaBond) QueryTree(ctx context.Context) (map[string]string, error) {
 	apiurl := "https://yield.chinabond.com.cn/cbweb-mn/yc/queryTree?locale=zh_CN"
-	logging.Debug(ctx, "ChinaBond QueryTree "+apiurl+" begin")
+	logrus.WithContext(ctx).Debug("ChinaBond QueryTree " + apiurl + " begin")
 	beginTime := time.Now()
 	resp := RespQueryTree{}
 	header := map[string]string{
@@ -35,12 +34,10 @@ func (c ChinaBond) QueryTree(ctx context.Context) (map[string]string, error) {
 	}
 	err := goutils.HTTPGET(ctx, c.HTTPClient, apiurl, header, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"ChinaBond QueryTree "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{
+		"latency(ms)": latency,
+		"resp":        resp,
+	}).Debug("ChinaBond QueryTree " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}

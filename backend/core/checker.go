@@ -13,8 +13,8 @@ import (
 	"github.com/axiaoxin-com/goutils"
 	"github.com/axiaoxin-com/investool/datacenter/eastmoney"
 	"github.com/axiaoxin-com/investool/models"
-	"github.com/axiaoxin-com/logging"
 	mapset "github.com/deckarep/golang-set"
+	"github.com/sirupsen/logrus"
 )
 
 // CheckerOptions 检测条件选项
@@ -157,7 +157,7 @@ func (c Checker) CheckFundamentals(ctx context.Context, stock models.Stock) (res
 	desc = fmt.Sprintf("%d年内ROE(年报):<br/>%+v", c.Options.CheckYears, roeList)
 	roeavg, err := goutils.AvgFloat64(roeList)
 	if err != nil {
-		logging.Warn(ctx, "roe avg error:"+err.Error())
+		logrus.WithContext(ctx).Warn("roe avg error:" + err.Error())
 	}
 	if roeavg < c.Options.NoCheckYearsROE {
 		// 年报的ROE递增
@@ -714,7 +714,7 @@ func (c Checker) CheckFundStocks(ctx context.Context, fund *models.Fund) (result
 	return
 }
 
-//FundStocksSimilarity 基金持仓相似度
+// FundStocksSimilarity 基金持仓相似度
 type FundStocksSimilarity struct {
 	Fund *models.Fund `json:"fund"`
 	// 1:完全相同 0:完全不同

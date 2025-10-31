@@ -12,7 +12,7 @@ import (
 
 	"github.com/axiaoxin-com/investool/core"
 	"github.com/axiaoxin-com/investool/models"
-	"github.com/axiaoxin-com/logging"
+	"github.com/sirupsen/logrus"
 )
 
 // Exportor exportor 实例
@@ -56,12 +56,12 @@ func Export(ctx context.Context, exportFilename string, selector core.Selector) 
 		os.Mkdir(filedir, 0755)
 	}
 
-	logging.Infof(ctx, "investool exportor start export selected stocks to %s", exportFilename)
+	logrus.WithContext(ctx).Infof("investool exportor start export selected stocks to %s", exportFilename)
 	var err error
 	// 自动筛选股票
 	stocks, err := selector.AutoFilterStocks(ctx)
 	if err != nil {
-		logging.Fatal(ctx, err.Error())
+		logrus.WithContext(ctx).Fatal(err.Error())
 	}
 	e := New(ctx, stocks, selector)
 
@@ -82,7 +82,7 @@ func Export(ctx context.Context, exportFilename string, selector core.Selector) 
 
 	}
 	if err != nil {
-		logging.Fatal(ctx, err.Error())
+		logrus.WithContext(ctx).Fatal(err.Error())
 	}
 
 	fmt.Printf(

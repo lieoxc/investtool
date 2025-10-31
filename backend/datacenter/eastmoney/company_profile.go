@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // RespJBZL 基本资料接口返回结构
@@ -273,7 +272,7 @@ func (e EastMoney) QueryCompanyProfile(ctx context.Context, secuCode string) (Co
 	reqData := map[string]interface{}{
 		"fc": fc,
 	}
-	logging.Debug(ctx, "EastMoney QueryCompanyProfile "+apiurl+" begin", zap.Any("reqData", reqData))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"reqData": reqData}).Debug("EastMoney QueryCompanyProfile " + apiurl + " begin")
 	beginTime := time.Now()
 	req, err := goutils.NewHTTPJSONReq(ctx, apiurl, reqData)
 	if err != nil {
@@ -282,12 +281,7 @@ func (e EastMoney) QueryCompanyProfile(ctx context.Context, secuCode string) (Co
 	resp := RespJBZL{}
 	err = goutils.HTTPPOST(ctx, e.HTTPClient, req, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"EastMoney QueryCompanyProfile "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Debug("EastMoney QueryCompanyProfile " + apiurl + " end")
 	if err != nil {
 		return profile, err
 	}
@@ -306,7 +300,7 @@ func (e EastMoney) QueryCompanyProfile(ctx context.Context, secuCode string) (Co
 	params := map[string]string{
 		"fc": fc,
 	}
-	logging.Debug(ctx, "EastMoney QueryCompanyProfile "+apiurl+" begin", zap.Any("params", params))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"params": params}).Debug("EastMoney QueryCompanyProfile " + apiurl + " begin")
 	beginTime = time.Now()
 	apiurl, err = goutils.NewHTTPGetURLWithQueryString(ctx, apiurl, params)
 	if err != nil {
@@ -315,12 +309,7 @@ func (e EastMoney) QueryCompanyProfile(ctx context.Context, secuCode string) (Co
 	resp1 := RespCPBD{}
 	err = goutils.HTTPGET(ctx, e.HTTPClient, apiurl, nil, &resp1)
 	latency = time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"EastMoney QueryCompanyProfile "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", resp1),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Debug("EastMoney QueryCompanyProfile " + apiurl + " end")
 	if err != nil {
 		return profile, err
 	}

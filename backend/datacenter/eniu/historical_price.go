@@ -11,8 +11,7 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // RespHistoricalStockPrice 历史股价接口返回结构
@@ -31,7 +30,7 @@ func (p RespHistoricalStockPrice) LastYearFinalPrice() float64 {
 		date := p.Date[i]
 		if strings.Contains(date, prefix) {
 			price := p.Price[i]
-			logging.Debugf(nil, "date:%s price:%f", date, price)
+			logrus.Debugf("date:%s price:%f", date, price)
 			return price
 		}
 	}
@@ -62,7 +61,7 @@ func (p RespHistoricalStockPrice) HistoricalVolatility(ctx context.Context, peri
 	if err != nil {
 		return -1.0, err
 	}
-	logging.Debugs(ctx, "stdev:", stdev)
+	logrus.WithContext(ctx).Debug("stdev:", stdev)
 
 	periodValue := float64(250)
 	period = strings.ToUpper(period)
@@ -87,12 +86,12 @@ func (p RespHistoricalStockPrice) HistoricalVolatility(ctx context.Context, peri
 // QueryHistoricalStockPrice 获取历史股价，最新数据在最后，有一天的延迟
 func (e Eniu) QueryHistoricalStockPrice(ctx context.Context, secuCode string) (RespHistoricalStockPrice, error) {
 	apiurl := fmt.Sprintf("https://eniu.com/chart/pricea/%s/t/all", e.GetPathCode(ctx, secuCode))
-	logging.Debug(ctx, "EastMoney QueryOrgRating "+apiurl+" begin")
+	logrus.WithContext(ctx).Debug("EastMoney QueryOrgRating " + apiurl + " begin")
 	beginTime := time.Now()
 	resp := RespHistoricalStockPrice{}
 	err := goutils.HTTPGET(ctx, e.HTTPClient, apiurl, nil, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(ctx, "EastMoney QueryOrgRating "+apiurl+" end", zap.Int64("latency(ms)", latency), zap.Any("resp", resp))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency, "resp": resp}).Debug("EastMoney QueryOrgRating " + apiurl + " end")
 	return resp, err
 }
 

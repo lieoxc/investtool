@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // GincomeData 财务分析利润表数据
@@ -249,7 +248,7 @@ func (e EastMoney) QueryFinaGincomeData(ctx context.Context, secuCode string) (G
 		"sr":     "-1",
 		"st":     "REPORT_DATE",
 	}
-	logging.Debug(ctx, "EastMoney QueryFinaGincomeData "+apiurl+" begin", zap.Any("params", params))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"params": params}).Debug("EastMoney QueryFinaGincomeData " + apiurl + " begin")
 	beginTime := time.Now()
 	apiurl, err := goutils.NewHTTPGetURLWithQueryString(ctx, apiurl, params)
 	if err != nil {
@@ -258,12 +257,7 @@ func (e EastMoney) QueryFinaGincomeData(ctx context.Context, secuCode string) (G
 	resp := RespFinaGincomeData{}
 	err = goutils.HTTPGET(ctx, e.HTTPClient, apiurl, nil, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"EastMoney QueryFinaGincomeData "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Debug("EastMoney QueryFinaGincomeData " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}

@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // RespHistoricalPE 历史市盈率接口返回结构
@@ -60,7 +59,7 @@ func (e EastMoney) QueryHistoricalPEList(ctx context.Context, secuCode string) (
 		"year": "4", // 10 年
 		"type": "1", // 市盈率
 	}
-	logging.Debug(ctx, "EastMoney QueryHistoricalPEList "+apiurl+" begin", zap.Any("params", params))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"params": params}).Debug("EastMoney QueryHistoricalPEList " + apiurl + " begin")
 	beginTime := time.Now()
 	apiurl, err := goutils.NewHTTPGetURLWithQueryString(ctx, apiurl, params)
 	if err != nil {
@@ -69,12 +68,7 @@ func (e EastMoney) QueryHistoricalPEList(ctx context.Context, secuCode string) (
 	resp := RespHistoricalPE{}
 	err = goutils.HTTPGET(ctx, e.HTTPClient, apiurl, nil, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"EastMoney QueryHistoricalPEList "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Debug("EastMoney QueryHistoricalPEList " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +79,7 @@ func (e EastMoney) QueryHistoricalPEList(ctx context.Context, secuCode string) (
 	for _, i := range resp.Data[0] {
 		value, err := strconv.ParseFloat(i.Value, 64)
 		if err != nil {
-			logging.Error(ctx, "QueryHistoricalPEList ParseFloat error:"+err.Error())
+			logrus.WithContext(ctx).Error("QueryHistoricalPEList ParseFloat error:" + err.Error())
 			continue
 		}
 		pe := HistoricalPE{

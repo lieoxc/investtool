@@ -21,9 +21,8 @@ import (
 	"github.com/axiaoxin-com/investool/datacenter"
 	"github.com/axiaoxin-com/investool/datacenter/eastmoney"
 	"github.com/axiaoxin-com/investool/models"
-	"github.com/axiaoxin-com/logging"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 // Selector 选股器
@@ -46,7 +45,7 @@ func (s Selector) AutoFilterStocks(ctx context.Context) (result models.StockList
 	if err != nil {
 		return
 	}
-	logging.Infof(ctx, "AutoFilterStocks will filter from %d stocks by %s", len(stocks), s.Filter.String())
+	logrus.WithContext(ctx).Infof("AutoFilterStocks will filter from %d stocks by %s", len(stocks), s.Filter.String())
 	if len(stocks) == 0 {
 		return
 	}
@@ -66,13 +65,13 @@ func (s Selector) AutoFilterStocks(ctx context.Context) (result models.StockList
 				wg.Done()
 				<-jobChan
 				if r := recover(); r != nil {
-					logging.Errorf(ctx, "recover from:%v", r)
+					logrus.WithContext(ctx).Errorf("recover from:%v", r)
 				}
 			}()
 
 			stock, err := models.NewStock(ctx, baseInfo)
 			if err != nil {
-				logging.Error(ctx, "NewStock error:"+err.Error())
+				logrus.WithContext(ctx).Error("NewStock error:" + err.Error())
 				return
 			}
 			if s.Checker == nil {
@@ -86,13 +85,13 @@ func (s Selector) AutoFilterStocks(ctx context.Context) (result models.StockList
 					result = append(result, stock)
 					mu.Unlock()
 				} else {
-					logging.Debug(ctx, fmt.Sprintf("%s %s has some defects", stock.BaseInfo.SecurityNameAbbr, stock.BaseInfo.Secucode), zap.Any("details", details))
+					logrus.WithContext(ctx).WithField("details", details).Debug(fmt.Sprintf("%s %s has some defects", stock.BaseInfo.SecurityNameAbbr, stock.BaseInfo.Secucode))
 				}
 			}
 		}(ctx, baseInfo)
 	}
 	wg.Wait()
-	logging.Infof(ctx, "AutoFilterStocks selected %d stocks", len(result))
+	logrus.WithContext(ctx).Infof("AutoFilterStocks selected %d stocks", len(result))
 	result.SortByROE()
 	return
 }

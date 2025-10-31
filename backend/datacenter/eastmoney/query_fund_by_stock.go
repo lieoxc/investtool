@@ -8,9 +8,8 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
 	"github.com/corpix/uarand"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // HoldStockFund 持有指定股票的基金
@@ -57,7 +56,7 @@ func (e EastMoney) QueryFundByStock(ctx context.Context, stockName, stockCode st
 		stockName,
 		stockCode,
 	)
-	logging.Debug(ctx, "EastMoney QueryFundByStock "+apiurl+" begin")
+	logrus.WithContext(ctx).Debug("EastMoney QueryFundByStock " + apiurl + " begin")
 	beginTime := time.Now()
 	resp := RespQueryFundByStock{}
 	header := map[string]string{
@@ -65,12 +64,7 @@ func (e EastMoney) QueryFundByStock(ctx context.Context, stockName, stockCode st
 	}
 	err := goutils.HTTPGET(ctx, e.HTTPClient, apiurl, header, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"EastMoney QueryFundByStock "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Debug("EastMoney QueryFundByStock " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}

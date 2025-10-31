@@ -9,9 +9,7 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
-
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // FreeHolder 流通股东
@@ -68,7 +66,7 @@ func (e EastMoney) QueryFreeHolders(ctx context.Context, secuCode string) (FreeH
 		"filter":     fmt.Sprintf(`(SECUCODE="%s")`, strings.ToUpper(secuCode)),
 		"pageSize":   "10",
 	}
-	logging.Debug(ctx, "EastMoney QueryFreeHolders "+apiurl+" begin", zap.Any("params", params))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"params": params}).Debug("EastMoney QueryFreeHolders " + apiurl + " begin")
 	beginTime := time.Now()
 	apiurl, err := goutils.NewHTTPGetURLWithQueryString(ctx, apiurl, params)
 	if err != nil {
@@ -77,12 +75,7 @@ func (e EastMoney) QueryFreeHolders(ctx context.Context, secuCode string) (FreeH
 	resp := RespFreeHolders{}
 	err = goutils.HTTPGET(ctx, e.HTTPClient, apiurl, nil, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"EastMoney QueryFreeHolders "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Debug("EastMoney QueryFreeHolders " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}

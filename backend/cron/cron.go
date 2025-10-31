@@ -4,10 +4,10 @@ package cron
 import (
 	"time"
 
-	"github.com/axiaoxin-com/logging"
 	"github.com/go-co-op/gocron"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -27,10 +27,10 @@ var (
 func RunCronJobs(async bool) {
 	timezone, err := time.LoadLocation("Asia/Shanghai")
 	if err != nil {
-		logging.Errorf(nil, "RunCronJobs time LoadLocation error:%v, using Local timezone as default", err.Error())
+		logrus.Errorf("RunCronJobs time LoadLocation error:%v, using Local timezone as default", err.Error())
 		timezone, _ = time.LoadLocation("Local")
 	}
-	logging.Debugf(nil, "cron timezone:%v", timezone)
+	logrus.Debugf("cron timezone:%v", timezone)
 	sched := gocron.NewScheduler(timezone)
 
 	// 同步基金净值列表和4433列表

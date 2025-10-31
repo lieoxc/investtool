@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/axiaoxin-com/investool/core"
-	"github.com/axiaoxin-com/logging"
+	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
 
@@ -214,7 +214,9 @@ func NewCheckerOptions(c *cli.Context) core.CheckerOptions {
 func ActionChecker() func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		loglevel := c.String("loglevel")
-		logging.SetLevel(loglevel)
+		if lvl, err := logrus.ParseLevel(loglevel); err == nil {
+			logrus.SetLevel(lvl)
+		}
 		keyword := c.String("keyword")
 		ctx := context.Background()
 		keywords := strings.Split(keyword, "/")

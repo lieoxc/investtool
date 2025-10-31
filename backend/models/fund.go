@@ -11,7 +11,7 @@ import (
 
 	"github.com/axiaoxin-com/goutils"
 	"github.com/axiaoxin-com/investool/datacenter/eastmoney"
-	"github.com/axiaoxin-com/logging"
+	"github.com/sirupsen/logrus"
 )
 
 // Fund 基金
@@ -307,7 +307,7 @@ func interfaceToFloat64(ctx context.Context, unk interface{}) (result float64) {
 		} else {
 			result, err = strconv.ParseFloat(i, 64)
 			if err != nil {
-				logging.Errorf(ctx, "interfaceToFloat64 ParseFloat error:%v i:%v unk:%v", err, i, unk)
+				logrus.WithContext(ctx).Errorf("interfaceToFloat64 ParseFloat error:%v i:%v unk:%v", err, i, unk)
 			}
 		}
 	default:
@@ -323,7 +323,7 @@ func NewFund(ctx context.Context, efund *eastmoney.RespFundInfo) *Fund {
 	stddev5 := interfaceToFloat64(ctx, efund.Tssj.Datas.Stddev5)
 	stddevavg, err := goutils.AvgFloat64([]float64{stddev1, stddev3, stddev5})
 	if err != nil {
-		logging.Errorf(ctx, "stddev avg error:", err.Error())
+		logrus.WithContext(ctx).Errorf("stddev avg error:%v", err.Error())
 	}
 
 	ret1 := interfaceToFloat64(ctx, efund.Tssj.Datas.Maxretra1)
@@ -331,14 +331,14 @@ func NewFund(ctx context.Context, efund *eastmoney.RespFundInfo) *Fund {
 	ret5 := interfaceToFloat64(ctx, efund.Tssj.Datas.Maxretra5)
 	retavg, err := goutils.AvgFloat64([]float64{ret1, ret3, ret5})
 	if err != nil {
-		logging.Errorf(ctx, "ret avg error:", err.Error())
+		logrus.WithContext(ctx).Errorf("ret avg error:%v", err.Error())
 	}
 	sharp1 := interfaceToFloat64(ctx, efund.Tssj.Datas.Sharp1)
 	sharp3 := interfaceToFloat64(ctx, efund.Tssj.Datas.Sharp3)
 	sharp5 := interfaceToFloat64(ctx, efund.Tssj.Datas.Sharp5)
 	sharpavg, err := goutils.AvgFloat64([]float64{sharp1, sharp3, sharp5})
 	if err != nil {
-		logging.Errorf(ctx, "sharp avg error:", err.Error())
+		logrus.WithContext(ctx).Errorf("sharp avg error:%v", err.Error())
 	}
 
 	fund := Fund{
@@ -380,7 +380,7 @@ func NewFund(ctx context.Context, efund *eastmoney.RespFundInfo) *Fund {
 	if len(efund.Jjgm.Datas) > 0 {
 		fund.NetAssetsScale = interfaceToFloat64(ctx, efund.Jjgm.Datas[0].Netnav)
 	} else {
-		logging.Debugf(ctx, "code:%v jjgm no data", fund.Code)
+		logrus.WithContext(ctx).Debugf("code:%v jjgm no data", fund.Code)
 	}
 
 	// 绩效
@@ -497,10 +497,10 @@ func NewFund(ctx context.Context, efund *eastmoney.RespFundInfo) *Fund {
 			manager.YearsAvgRepay = interfaceToFloat64(ctx, m.Yieldse)
 			fund.Manager = manager
 		} else {
-			logging.Warnf(ctx, "code:%v jjjlnew manager no data", fund.Code)
+			logrus.WithContext(ctx).Warnf("code:%v jjjlnew manager no data", fund.Code)
 		}
 	} else {
-		logging.Warnf(ctx, "code:%v jjjlnew no data", fund.Code)
+		logrus.WithContext(ctx).Warnf("code:%v jjjlnew no data", fund.Code)
 	}
 
 	// 分红送配
@@ -786,7 +786,7 @@ func (f Fund) EstabYears(ctx context.Context) float64 {
 	}
 	date, err := time.Parse("2006-01-02", f.EstablishedDate)
 	if err != nil {
-		logging.Errorf(ctx, "EstabYears parse date err:%v", err)
+		logrus.WithContext(ctx).Errorf("EstabYears parse date err:%v", err)
 		return 0
 	}
 	return time.Now().Sub(date).Hours() / 24.0 / 365.0

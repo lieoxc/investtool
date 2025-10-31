@@ -9,7 +9,6 @@ import (
 	"github.com/axiaoxin-com/investool/core"
 	"github.com/axiaoxin-com/investool/datacenter/eastmoney"
 	"github.com/axiaoxin-com/investool/models"
-	"github.com/axiaoxin-com/logging"
 	"github.com/sirupsen/logrus"
 )
 
@@ -26,7 +25,7 @@ func (s *FundService) GetFundIndex(ctx context.Context, params FundIndexParams) 
 	logrus.Info("GetFundIndex params:", params)
 	// 检查数据库是否初始化
 	if models.DB == nil {
-		logging.Error(ctx, "database not initialized")
+		logrus.WithContext(ctx).Error("database not initialized")
 		return &FundIndexResponse{}, nil
 	}
 	var allFound int64
@@ -222,7 +221,7 @@ func (s *FundService) GetFundFilter(ctx context.Context, params FundFilterParams
 	if err := models.DB.Model(&models.FundDB{}).
 		Distinct("type").
 		Pluck("type", &fundTypes).Error; err != nil {
-		logging.Error(ctx, "GetFundFilter get fund types error:"+err.Error())
+		logrus.WithContext(ctx).Error("GetFundFilter get fund types error:" + err.Error())
 	}
 
 	// 计算总页数，避免除零
@@ -291,7 +290,7 @@ func (s *FundService) CheckFund(ctx context.Context, params FundCheckParams) (*F
 				defer wg.Done()
 				checkResult, err := checker.CheckFundStocks(ctx, fund)
 				if err != nil {
-					logging.Errorf(ctx, "CheckFundStocks code:%s err:%v", fund.Code, err)
+					logrus.WithContext(ctx).Errorf("CheckFundStocks code:%s err:%v", fund.Code, err)
 					return
 				}
 				mu.Lock()
@@ -348,7 +347,7 @@ func (s *FundService) GetFundManagers(ctx context.Context, params FundManagerPar
 	searcher := core.NewSearcher(ctx)
 	bestFundInfoMap, err := searcher.SearchFunds(ctx, bestFundCodes)
 	if err != nil {
-		logging.Error(ctx, "SearchFunds err:"+err.Error())
+		logrus.WithContext(ctx).Error("SearchFunds err:" + err.Error())
 	}
 
 	// 返回结果item

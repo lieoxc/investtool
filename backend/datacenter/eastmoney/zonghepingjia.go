@@ -8,8 +8,7 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // ZHPJ 综合评价
@@ -58,7 +57,7 @@ func (e EastMoney) QueryZongHePingJia(ctx context.Context, secuCode string) (ZHP
 	reqData := map[string]interface{}{
 		"fc": fc,
 	}
-	logging.Debug(ctx, "EastMoney QueryZongHePingJia "+apiurl+" begin", zap.Any("reqData", reqData))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"reqData": reqData}).Debug("EastMoney QueryZongHePingJia " + apiurl + " begin")
 	beginTime := time.Now()
 	req, err := goutils.NewHTTPJSONReq(ctx, apiurl, reqData)
 	if err != nil {
@@ -67,12 +66,7 @@ func (e EastMoney) QueryZongHePingJia(ctx context.Context, secuCode string) (ZHP
 	resp := RespZongHePingJia{}
 	err = goutils.HTTPPOST(ctx, e.HTTPClient, req, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"EastMoney QueryZongHePingJia "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Debug("EastMoney QueryZongHePingJia " + apiurl + " end")
 	if err != nil {
 		return ZHPJ{}, err
 	}

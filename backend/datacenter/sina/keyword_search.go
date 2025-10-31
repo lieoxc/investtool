@@ -13,9 +13,8 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
 	"github.com/pkg/errors"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
 )
@@ -35,11 +34,11 @@ type SearchResult struct {
 // KeywordSearch 关键词搜索， 股票、代码、拼音
 func (s Sina) KeywordSearch(ctx context.Context, kw string) (results []SearchResult, err error) {
 	apiurl := fmt.Sprintf("https://suggest3.sinajs.cn/suggest/key=%s", kw)
-	logging.Debug(ctx, "Sina KeywordSearch "+apiurl+" begin")
+	logrus.WithContext(ctx).Debug("Sina KeywordSearch " + apiurl + " begin")
 	beginTime := time.Now()
 	resp, err := goutils.HTTPGETRaw(ctx, s.HTTPClient, apiurl, nil)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(ctx, "Sina KeywordSearch "+apiurl+" end", zap.Int64("latency(ms)", latency), zap.Any("resp", string(resp)))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency, "resp": string(resp)}).Debug("Sina KeywordSearch " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +46,7 @@ func (s Sina) KeywordSearch(ctx context.Context, kw string) (results []SearchRes
 	trans := transform.NewReader(bytes.NewReader(resp), simplifiedchinese.GBK.NewDecoder())
 	utf8resp, err := io.ReadAll(trans)
 	if err != nil {
-		logging.Error(ctx, "transform ReadAll error:"+err.Error())
+		logrus.WithContext(ctx).Error("transform ReadAll error:" + err.Error())
 	}
 	ds := strings.Split(string(utf8resp), "=")
 	if len(ds) != 2 {
@@ -61,7 +60,7 @@ func (s Sina) KeywordSearch(ctx context.Context, kw string) (results []SearchRes
 		}
 		market, err := strconv.Atoi(lineitems[1])
 		if err != nil {
-			logging.Errorf(ctx, "market:%s atoi error:%v", lineitems[1], err)
+			logrus.WithContext(ctx).Errorf("market:%s atoi error:%v", lineitems[1], err)
 		}
 		secucode := lineitems[3][2:] + "." + lineitems[3][:2]
 		result := SearchResult{

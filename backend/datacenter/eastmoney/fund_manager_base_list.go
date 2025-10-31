@@ -9,9 +9,8 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
 	"github.com/corpix/uarand"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // FundManagerBaseInfo 基金经理基本信息
@@ -92,7 +91,7 @@ func (e EastMoney) FundMangerBaseList(ctx context.Context, mftype string, sortCo
 			index,
 			size,
 		)
-		logging.Debug(ctx, "EastMoney FundMangerBaseList "+apiurl+" begin", zap.Int("index", index))
+		logrus.WithContext(ctx).WithFields(logrus.Fields{"index": index}).Debug("EastMoney FundMangerBaseList " + apiurl + " begin")
 		if err := goutils.HTTPGET(ctx, e.HTTPClient, apiurl, header, &resp); err != nil {
 			return nil, err
 		}
@@ -104,13 +103,11 @@ func (e EastMoney) FundMangerBaseList(ctx context.Context, mftype string, sortCo
 		index++
 	}
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"EastMoney FundMangerBaseList end",
-		zap.Int64("latency(ms)", latency),
-		zap.Int("totalCount", total),
-		zap.Int("resultCount", len(result)),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{
+		"latency(ms)": latency,
+		"totalCount":  total,
+		"resultCount": len(result),
+	}).Debug("EastMoney FundMangerBaseList end")
 	return result, nil
 }
 
@@ -185,7 +182,7 @@ func (e EastMoney) QueryFundMsnMangerInfo(ctx context.Context, mgrid string) (*R
 		"https://fundztapi.eastmoney.com/FundSpecialApiNew/FundMSNMangerInfo?FCODE=%s&plat=Iphone&deviceid=123&product=EFund&version=6.4.7",
 		mgrid,
 	)
-	logging.Debug(ctx, "EastMoney QueryFundMsnMangerInfo "+apiurl+" begin")
+	logrus.WithContext(ctx).Debug("EastMoney QueryFundMsnMangerInfo " + apiurl + " begin")
 	header := map[string]string{
 		"user-agent": uarand.GetRandom(),
 	}
@@ -193,11 +190,7 @@ func (e EastMoney) QueryFundMsnMangerInfo(ctx context.Context, mgrid string) (*R
 		return nil, err
 	}
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(
-		ctx,
-		"EastMoney QueryFundMsnMangerInfo end",
-		zap.Int64("latency(ms)", latency),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Debug("EastMoney QueryFundMsnMangerInfo end")
 
 	if resp.ErrCode != 0 {
 		return nil, errors.New(resp.ErrMsg.(string))

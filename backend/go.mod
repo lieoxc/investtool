@@ -7,7 +7,6 @@ require (
 	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/avast/retry-go/v4 v4.7.0
 	github.com/axiaoxin-com/goutils v1.1.0
-	github.com/axiaoxin-com/logging v1.2.11-0.20210710005236-5a960a1422ba
 	github.com/corpix/uarand v0.1.1
 	github.com/deckarep/golang-set v1.8.0
 	github.com/fsnotify/fsnotify v1.7.0

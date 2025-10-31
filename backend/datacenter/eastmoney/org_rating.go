@@ -9,8 +9,7 @@ import (
 	"time"
 
 	"github.com/axiaoxin-com/goutils"
-	"github.com/axiaoxin-com/logging"
-	"go.uber.org/zap"
+	"github.com/sirupsen/logrus"
 )
 
 // RespOrgRating 统计评级接口返回结构
@@ -58,7 +57,7 @@ func (e EastMoney) QueryOrgRating(ctx context.Context, secuCode string) (OrgRati
 		"sr":     "1",
 		"st":     "DATE_TYPE_CODE",
 	}
-	logging.Debug(ctx, "EastMoney QueryOrgRating "+apiurl+" begin", zap.Any("params", params))
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"params": params}).Debug("EastMoney QueryOrgRating " + apiurl + " begin")
 	beginTime := time.Now()
 	apiurl, err := goutils.NewHTTPGetURLWithQueryString(ctx, apiurl, params)
 	if err != nil {
@@ -67,10 +66,7 @@ func (e EastMoney) QueryOrgRating(ctx context.Context, secuCode string) (OrgRati
 	resp := RespOrgRating{}
 	err = goutils.HTTPGET(ctx, e.HTTPClient, apiurl, nil, &resp)
 	latency := time.Now().Sub(beginTime).Milliseconds()
-	logging.Debug(ctx, "EastMoney QueryOrgRating "+apiurl+" end",
-		zap.Int64("latency(ms)", latency),
-		// zap.Any("resp", resp),
-	)
+	logrus.WithContext(ctx).WithFields(logrus.Fields{"latency(ms)": latency}).Debug("EastMoney QueryOrgRating " + apiurl + " end")
 	if err != nil {
 		return nil, err
 	}
