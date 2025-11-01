@@ -39,8 +39,6 @@ services:
     depends_on:
       backend:
         condition: service_started
-    volumes:
-      - nginx:/etc/nginx
     restart: unless-stopped
     networks:
       - fund_network

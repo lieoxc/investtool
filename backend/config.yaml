@@ -3,7 +3,7 @@ env: "localhost"
 # 数据库配置
 database:
   host: postgres
-  port: 5478
+  port: 5432
   user: "postgres"
   password: "investool123"
   dbname: "fund"
