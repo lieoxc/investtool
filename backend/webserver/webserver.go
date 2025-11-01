@@ -41,7 +41,6 @@ func InitWithConfigFile(configFile string) {
 	}
 
 	// 设置 viper 中 webserver 配置项默认值
-	viper.SetDefault("env", "localhost")
 	viper.SetDefault("server.addr", ":4869")
 	viper.SetDefault("server.pprof", true)
 }

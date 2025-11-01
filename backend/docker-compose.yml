@@ -65,12 +65,12 @@ services:
       
 volumes:
   postgres_data:
-    driver: local
+  go_configs:
 networks:
   fund_network:
     driver: bridge
     ipam:
       driver: default
       config:
-        - subnet: 172.20.0.0/16  # 定义网络的子网范围
-          gateway: 172.20.0.1    # 定义网关地址
+        - subnet: 172.30.0.0/16  # 定义网络的子网范围
+          gateway: 172.30.0.1    # 定义网关地址

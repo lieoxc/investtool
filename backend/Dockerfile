@@ -16,4 +16,4 @@ EXPOSE 9999
 RUN chmod +x investool
 RUN pwd
 RUN ls -lrt
-ENTRYPOINT [ "./investool webserver" ]
+ENTRYPOINT [ "./investool", "webserver" ]
