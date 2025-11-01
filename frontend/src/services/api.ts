@@ -16,8 +16,24 @@ class ApiClient {
   private client: AxiosInstance;
 
   constructor() {
+    // 在生产环境使用相对路径，让 nginx 代理到后端
+    // 在开发环境使用环境变量或通过 react-scripts 的 proxy 配置
+    const getBaseURL = () => {
+      // 如果设置了环境变量，优先使用
+      if (process.env.REACT_APP_API_BASE_URL) {
+        return process.env.REACT_APP_API_BASE_URL;
+      }
+      // 生产环境（已构建的应用）使用相对路径，通过 nginx 代理
+      if (process.env.NODE_ENV === 'production') {
+        return '/api';
+      }
+      // 开发环境可以使用 proxy 配置或直接使用 localhost
+      // react-scripts 的 proxy 配置会自动处理相对路径的请求
+      return '';
+    };
+
     this.client = axios.create({
-      baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:4869',
+      baseURL: getBaseURL(),
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',
