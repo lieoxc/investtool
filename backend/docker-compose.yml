@@ -53,10 +53,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
-      gmqtt:
-        condition: service_started
     volumes:
       - go_configs:/go/src/app/configs
     restart: unless-stopped
