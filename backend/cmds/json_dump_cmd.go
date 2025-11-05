@@ -49,13 +49,16 @@ func ActionJSON() func(c *cli.Context) error {
 		}
 
 		if c.Bool("d") {
-			cron.SyncFund()
-			// cron.SyncFundManagers()
-			// cron.SyncIndustryList()
+			UpdateFund()
 			return nil
 		}
 		return nil
 	}
+}
+func UpdateFund() {
+	cron.SyncFund()
+	cron.SyncFundManagers()
+	cron.SyncIndustryList()
 }
 
 // CommandJSON dump json files cmd

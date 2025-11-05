@@ -3,9 +3,12 @@
 package cmds
 
 import (
+	"time"
+
 	"github.com/axiaoxin-com/investool/models"
 	"github.com/axiaoxin-com/investool/routes"
 	"github.com/axiaoxin-com/investool/webserver"
+	"github.com/go-co-op/gocron"
 	"github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 )
@@ -47,6 +50,9 @@ func ActionWebserver() func(c *cli.Context) error {
 			logrus.Warn("database initialization failed:" + err.Error())
 		}
 
+		// 启动定时任务：每3天执行一次 SyncFund
+		startSyncFundScheduler()
+
 		server := webserver.NewGinEngine()
 		// 注册路由
 		routes.Routes(server)
@@ -66,4 +72,25 @@ func CommandWebserver() *cli.Command {
 		Action: ActionWebserver(),
 	}
 	return cmd
+}
+
+// startSyncFundScheduler 启动 SyncFund 定时任务，每3天执行一次
+func startSyncFundScheduler() {
+	timezone, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		logrus.Errorf("startSyncFundScheduler time LoadLocation error:%v, using Local timezone as default", err.Error())
+		timezone, _ = time.LoadLocation("Local")
+	}
+	sched := gocron.NewScheduler(timezone)
+
+	// 每3天执行一次 SyncFund（从启动时开始，每72小时执行一次）
+	sched.Every(48).Hours().Do(func() {
+		logrus.Info("Scheduled SyncFund task started")
+		UpdateFund()
+		logrus.Info("Scheduled SyncFund task completed")
+	})
+
+	// 异步启动定时任务
+	sched.StartAsync()
+	logrus.Info("SyncFund scheduler started: will run every 3 days (72 hours)")
 }
