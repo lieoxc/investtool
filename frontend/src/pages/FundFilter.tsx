@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Row, Col, Statistic, Typography, Alert } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import FundTable from '../components/FundTable';
@@ -13,27 +13,58 @@ const FundFilter: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [fundTypes, setFundTypes] = useState<string[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [params, setParams] = useState<FundFilterParams>({
+    page_num: 1,
+    page_size: 20,
+    sort: 0,
+    type: ''
+  });
 
-  const loadFunds = async (params: FundFilterParams = {}) => {
+  const loadFunds = useCallback(async (newParams?: FundFilterParams) => {
+    const paramsToUse = newParams || params;
     setLoading(true);
     try {
-      const response = await apiClient.getFundFilter(params);
+      console.log('正在加载基金筛选数据，参数:', paramsToUse);
+      const response = await apiClient.getFundFilter(paramsToUse);
+      console.log('API响应:', response);
+      
       setFunds(response.fund_list || []);
       setFundTypes(response.fund_types || []);
       setTotalCount(response.fund_4433_count || 0);
+      // 设置分页总数
+      setTotal(response.pagination?.total || response.fund_list?.length || 0);
     } catch (error) {
       console.error('加载基金数据失败:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [params]);
 
   useEffect(() => {
     loadFunds();
-  }, []);
+  }, [loadFunds]);
 
   const handleFilter = (values: FundFilterParams) => {
-    loadFunds(values);
+    // 重置到第一页，保留排序和分页大小设置
+    const newParams: FundFilterParams = { 
+      ...values, 
+      page_num: 1, 
+      page_size: params.page_size || 20,
+      sort: values.sort !== undefined ? values.sort : params.sort || 0
+    };
+    setParams(newParams);
+    loadFunds(newParams);
+  };
+
+  const handlePageChange = (page: number, pageSize?: number) => {
+    const newParams = { 
+      ...params, 
+      page_num: page,
+      page_size: pageSize || params.page_size || 20
+    };
+    setParams(newParams);
+    loadFunds(newParams);
   };
 
   return (
@@ -82,6 +113,17 @@ const FundFilter: React.FC = () => {
           data={funds}
           loading={loading}
           showScore={true}
+          pagination={{
+            current: params.page_num || 1,
+            pageSize: params.page_size || 20,
+            total: total,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => 
+              `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+            onChange: handlePageChange,
+            onShowSizeChange: handlePageChange,
+          }}
         />
       </Card>
     </div>

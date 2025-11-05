@@ -1,7 +1,7 @@
 import React from 'react';
 import { Table, Tag, Button, Space } from 'antd';
 import { LinkOutlined, CopyOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
+import type { ColumnsType, TablePaginationConfig } from 'antd/es/table';
 import { Fund } from '../types/fund';
 import { formatCurrency, formatPercentage, getFundTypeColor, calculateFundScore } from '../utils';
 
@@ -10,13 +10,15 @@ interface FundTableProps {
   loading?: boolean;
   showScore?: boolean;
   onRowClick?: (record: Fund) => void;
+  pagination?: TablePaginationConfig | false;
 }
 
 const FundTable: React.FC<FundTableProps> = ({ 
   data, 
   loading = false, 
   showScore = true,
-  onRowClick 
+  onRowClick,
+  pagination
 }) => {
   const handleCopyCode = (code: string) => {
     navigator.clipboard.writeText(code);
@@ -148,19 +150,22 @@ const FundTable: React.FC<FundTableProps> = ({
     });
   }
 
+  // 默认分页配置（如果未传入 pagination）
+  const defaultPagination: TablePaginationConfig = {
+    pageSize: 20,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total, range) => 
+      `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+  };
+
   return (
     <Table
       columns={columns}
       dataSource={data}
       loading={loading}
       rowKey="code"
-      pagination={{
-        pageSize: 20,
-        showSizeChanger: true,
-        showQuickJumper: true,
-        showTotal: (total, range) => 
-          `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
-      }}
+      pagination={pagination !== undefined ? pagination : defaultPagination}
       scroll={{ x: 1000 }}
       onRow={(record) => ({
         onClick: () => onRowClick?.(record),

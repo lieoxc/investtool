@@ -25,7 +25,7 @@ class ApiClient {
       }
       // 生产环境（已构建的应用）使用相对路径，通过 nginx 代理
       if (process.env.NODE_ENV === 'production') {
-        return '/api';
+        return '';
       }
       // 开发环境可以使用 proxy 配置或直接使用 localhost
       // react-scripts 的 proxy 配置会自动处理相对路径的请求

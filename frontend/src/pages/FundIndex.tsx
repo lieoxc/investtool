@@ -15,6 +15,7 @@ const FundIndex: React.FC = () => {
   const [updatedAt, setUpdatedAt] = useState<string>('');
   const [allFundCount, setAllFundCount] = useState(0);
   const [fund4433Count, setFund4433Count] = useState(0);
+  const [total, setTotal] = useState(0);
   const [params, setParams] = useState<FundIndexParams>({
     page_num: 1,
     page_size: 20,
@@ -22,11 +23,12 @@ const FundIndex: React.FC = () => {
     type: ''
   });
 
-  const loadFunds = useCallback(async (newParams: FundIndexParams = params) => {
+  const loadFunds = useCallback(async (newParams?: FundIndexParams, showSuccess = false) => {
+    const paramsToUse = newParams || params;
     setLoading(true);
     try {
-      console.log('正在加载基金数据，参数:', newParams);
-      const response = await apiClient.getFundIndex(newParams);
+      console.log('正在加载基金数据，参数:', paramsToUse);
+      const response = await apiClient.getFundIndex(paramsToUse);
       console.log('API响应:', response);
       
       setFunds(response.fund_list || []);
@@ -34,7 +36,11 @@ const FundIndex: React.FC = () => {
       setUpdatedAt(response.updated_at || '');
       setAllFundCount(response.all_fund_count || 0);
       setFund4433Count(response.fund_4433_count || 0);
-      message.success('数据加载成功');
+      // 设置分页总数
+      setTotal(response.pagination?.total || response.fund_list?.length || 0);
+      if (showSuccess) {
+        message.success('数据加载成功');
+      }
     } catch (error: any) {
       console.error('加载基金数据失败:', error);
       const errorMessage = error.response?.data?.message || error.message || '加载基金数据失败';
@@ -61,7 +67,17 @@ const FundIndex: React.FC = () => {
   };
 
   const handleRefresh = () => {
-    loadFunds();
+    loadFunds(undefined, true);
+  };
+
+  const handlePageChange = (page: number, pageSize?: number) => {
+    const newParams = { 
+      ...params, 
+      page_num: page,
+      page_size: pageSize || params.page_size
+    };
+    setParams(newParams);
+    loadFunds(newParams);
   };
 
   return (
@@ -151,6 +167,17 @@ const FundIndex: React.FC = () => {
           data={funds}
           loading={loading}
           showScore={true}
+          pagination={{
+            current: params.page_num || 1,
+            pageSize: params.page_size || 20,
+            total: total,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) => 
+              `第 ${range[0]}-${range[1]} 条，共 ${total} 条`,
+            onChange: handlePageChange,
+            onShowSizeChange: handlePageChange,
+          }}
         />
       </Card>
     </div>

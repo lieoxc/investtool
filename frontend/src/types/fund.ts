@@ -67,6 +67,10 @@ export interface FundIndexParams {
 }
 
 export interface FundFilterParams {
+  page_num?: number;
+  page_size?: number;
+  sort?: number;
+  type?: string;
   year_1_rank_ratio?: number;
   this_year_235_rank_ratio?: number;
   month_6_rank_ratio?: number;
