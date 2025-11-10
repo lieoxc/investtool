@@ -752,6 +752,10 @@ func (f Fund) Is4433(ctx context.Context) bool {
 	if f.Performance.Year5ProfitRatio == 0 || f.Performance.Year5RankNum == 0 {
 		return false
 	}
+	// 规模小于10亿则不满足
+	if f.NetAssetsScale < 10*100000000 {
+		return false
+	}
 	quarterRatio := float64(1) / float64(4) * 100.0
 	oneThirdRatio := float64(1) / float64(3) * 100.0
 	// 最近1年收益率排名在同类型基金的前四分之一；

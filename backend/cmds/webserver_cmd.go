@@ -83,7 +83,7 @@ func startSyncFundScheduler() {
 	}
 	sched := gocron.NewScheduler(timezone)
 
-	// 每3天执行一次 SyncFund（从启动时开始，每72小时执行一次）
+	// 每2天执行一次 SyncFund（从启动时开始，每48小时执行一次）
 	sched.Every(48).Hours().Do(func() {
 		logrus.Info("Scheduled SyncFund task started")
 		UpdateFund()
